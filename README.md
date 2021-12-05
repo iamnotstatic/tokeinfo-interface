@@ -5,7 +5,7 @@
 
 [![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-red.svg?style=flat)](http://makeapullrequest.com)
 
-Get token liquidity pairs address
+Get liquidity pair addresses with ease
 
 </div>
 
