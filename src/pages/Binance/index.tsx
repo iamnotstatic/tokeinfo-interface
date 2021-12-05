@@ -107,6 +107,7 @@ const Binance = () => {
             type="text"
             placeholder="0x..."
             onChange={(e) => setAddress(e.target.value)}
+            autoComplete="off"
           />
         </div>
 
