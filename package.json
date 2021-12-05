@@ -2,6 +2,24 @@
   "name": "pair-getter-interface",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Abdulfatai Suleiman",
+    "website": "https://github.com/iamnotstatic"
+  },
+  "keywords": [
+    "Ethereum",
+    "Blockchain",
+    "Binance Smart Chain",
+    "Smart Contract",
+    "Token address",
+    "Token Pair",
+    "Liquidity Token"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:iamnotstatic/pair-getter-interface.git"
+  },
   "dependencies": {
     "@craco/craco": "^6.4.2",
     "@testing-library/jest-dom": "^5.11.4",

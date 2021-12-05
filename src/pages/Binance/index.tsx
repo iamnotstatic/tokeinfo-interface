@@ -111,7 +111,7 @@ const Binance = () => {
         </div>
 
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-          Select Pair Token
+          Select Pool Token
         </label>
         <div className="">
           <select
@@ -131,7 +131,7 @@ const Binance = () => {
         </div>
         <div className="mt-6">
           <button
-            className={`bg-blue-300 w-full py-4 px-8 rounded-lg text-gray-50 ${
+            className={`bg-gray-800 w-full py-4 px-8 rounded-lg text-gray-50 ${
               loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
             }`}
           >
