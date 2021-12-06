@@ -82,6 +82,7 @@ const Binance = () => {
       pairName: pairToken?.split(',')[1] as string,
     });
 
+    setError('');
     setLoading(false);
   };
   return (
