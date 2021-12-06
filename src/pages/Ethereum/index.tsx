@@ -39,10 +39,13 @@ const Ethereum = () => {
 
     const checksummedAddress = await web3.utils.toChecksumAddress(address);
 
-    const bscMainnet = new Web3(process.env.REACT_APP_INFURA_MAINNET_URL as string);
+    const bscMainnet = new Web3(
+      process.env.REACT_APP_INFURA_MAINNET_URL as string
+    );
     const addressIsContract = await bscMainnet.eth.getCode(checksummedAddress);
 
     if (addressIsContract === '0x') {
+      setContent({ ...content, name: '' });
       setError('Address is not a contract');
       setLoading(false);
       return;
@@ -60,6 +63,7 @@ const Ethereum = () => {
     const isContract = await bscMainnet.eth.getCode(pairAddress);
 
     if (isContract === '0x') {
+      setContent({ ...content, name: '' });
       setError('No liquidity found for this token');
       setLoading(false);
       return;
@@ -82,6 +86,7 @@ const Ethereum = () => {
       pairName: pairToken?.split(',')[1] as string,
     });
 
+    setError('');
     setLoading(false);
   };
   return (

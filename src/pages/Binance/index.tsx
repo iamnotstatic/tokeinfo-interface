@@ -43,6 +43,7 @@ const Binance = () => {
     const addressIsContract = await bscMainnet.eth.getCode(checksummedAddress);
 
     if (addressIsContract === '0x') {
+      setContent({ ...content, name: '' });
       setError('Address is not a contract');
       setLoading(false);
       return;
@@ -60,6 +61,7 @@ const Binance = () => {
     const isContract = await bscMainnet.eth.getCode(pairAddress);
 
     if (isContract === '0x') {
+      setContent({ ...content, name: '' });
       setError('No liquidity found for this token');
       setLoading(false);
       return;
