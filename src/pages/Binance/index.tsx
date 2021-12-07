@@ -83,8 +83,6 @@ const Binance = () => {
         `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
       );
 
-      console.log(data[`${coingeckoId}`].usd);
-
       const erc20Contract = new bscMainnet.eth.Contract(
         Erc20Abi as any,
         checksummedAddress
@@ -123,8 +121,9 @@ const Binance = () => {
       setError('');
       setLoading(false);
     } catch (error) {
-      setError('Something went wrong, please try again');
+      setContent({ ...content, name: '' });
       setLoading(false);
+      setError('Something went wrong, please try again');
     }
   };
   return (
@@ -189,12 +188,15 @@ const Binance = () => {
                 <div>Decimals: {content.decimals}</div>
                 <div>
                   Liquidity: {content.liquidity.toFixed(4)}{' '}
-                  {content.liquiditySymbol} (
-                  {content.liquidityUSD.toLocaleString('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                  })}
-                  )
+                  {content.liquiditySymbol}{' '}
+                  <span className="font-bold">
+                    (
+                    {content.liquidityUSD.toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    })}
+                    )
+                  </span>
                 </div>
                 <div>Pair Address: {content.pairAddress}</div>
                 <div>

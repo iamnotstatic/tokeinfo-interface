@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 import PairContractAbi from '../../abis/pairGetter.json';
 import Erc20Abi from '../../abis/erc20.json';
+import axios, { AxiosResponse } from 'axios';
+import { ethPools } from '../../constants/eth';
 
 const Ethereum = () => {
   const [address, setAddress] = useState('0x...');
@@ -18,6 +20,7 @@ const Ethereum = () => {
     pairName: '',
     liquidity: 0,
     liquiditySymbol: '',
+    liquidityUSD: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -74,6 +77,14 @@ const Ethereum = () => {
         return;
       }
 
+      const coingeckoId = ethPools.find(
+        (pool) => pool.address === pairToken
+      )?.coingeckoId;
+
+      const { data }: AxiosResponse = await axios.get(
+        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
+      );
+
       const erc20Contract = new ethMainnet.eth.Contract(
         Erc20Abi as any,
         checksummedAddress
@@ -104,13 +115,17 @@ const Ethereum = () => {
         pairName: liquiditySymbol,
         liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
         liquiditySymbol,
+        liquidityUSD:
+          (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
+          data[`${coingeckoId}`].usd,
       });
 
       setError('');
       setLoading(false);
     } catch (error) {
-      setError('Something went wrong, please try again');
+      setContent({ ...content, name: '' });
       setLoading(false);
+      setError('Something went wrong, please try again');
     }
   };
   return (
@@ -148,18 +163,11 @@ const Ethereum = () => {
             className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
             onChange={(e) => setPairToken(e.target.value)}
           >
-            <option value="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2">
-              WETH
-            </option>
-            <option value="0xdAC17F958D2ee523a2206206994597C13D831ec7">
-              USDT
-            </option>
-            <option value="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48">
-              USDC
-            </option>
-            <option value="0x6B175474E89094C44Da98b954EedeAC495271d0F">
-              DAI
-            </option>
+            {ethPools.map((pool) => (
+              <option key={pool.symbol} value={pool.address}>
+                {pool.symbol}
+              </option>
+            ))}
           </select>
         </div>
         <div className="mt-6">
@@ -182,7 +190,15 @@ const Ethereum = () => {
                 <div>Decimals: {content.decimals}</div>
                 <div>
                   Liquidity: {content.liquidity.toFixed(4)}{' '}
-                  {content.liquiditySymbol}
+                  {content.liquiditySymbol}{' '}
+                  <span className="font-bold">
+                    (
+                    {content.liquidityUSD.toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    })}
+                    )
+                  </span>
                 </div>
                 <div>Pair Address: {content.pairAddress}</div>
                 <div>
