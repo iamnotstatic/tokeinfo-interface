@@ -14,6 +14,14 @@ const Foooter = () => {
             <img src={github} alt="github" className="w-8" />
           </a>
         </div>
+        <div className="text-white">
+          Made with ❤️ by{' '}
+          <a href="https://twitter.com/iamnotstatic" target="_blank" rel="noreferrer">
+            <span className="text-blue-400 dark:text-gray-400">
+              iamnotstatic
+            </span>
+          </a>
+        </div>
         <div>
           <a
             href={`https://github.com/iamnotstatic/pair-getter-interface`}
