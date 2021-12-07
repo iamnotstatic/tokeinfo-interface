@@ -75,14 +75,6 @@ const Binance = () => {
         return;
       }
 
-      const coingeckoId = bscPools.find(
-        (pool) => pool.address === pairToken
-      )?.coingeckoId;
-
-      const { data }: AxiosResponse = await axios.get(
-        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
-      );
-
       const erc20Contract = new bscMainnet.eth.Contract(
         Erc20Abi as any,
         checksummedAddress
@@ -91,6 +83,14 @@ const Binance = () => {
       const poolErc20Contract = new bscMainnet.eth.Contract(
         Erc20Abi as any,
         pairToken
+      );
+
+      const coingeckoId = bscPools.find(
+        (pool) => pool.address === pairToken
+      )?.coingeckoId;
+
+      const { data }: AxiosResponse = await axios.get(
+        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
       );
 
       const name = await erc20Contract.methods.name().call();

@@ -77,14 +77,6 @@ const Ethereum = () => {
         return;
       }
 
-      const coingeckoId = ethPools.find(
-        (pool) => pool.address === pairToken
-      )?.coingeckoId;
-
-      const { data }: AxiosResponse = await axios.get(
-        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
-      );
-
       const erc20Contract = new ethMainnet.eth.Contract(
         Erc20Abi as any,
         checksummedAddress
@@ -93,6 +85,13 @@ const Ethereum = () => {
       const poolErc20Contract = new ethMainnet.eth.Contract(
         Erc20Abi as any,
         pairToken
+      );
+      const coingeckoId = ethPools.find(
+        (pool) => pool.address === pairToken
+      )?.coingeckoId;
+
+      const { data }: AxiosResponse = await axios.get(
+        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
       );
 
       const name = await erc20Contract.methods.name().call();
