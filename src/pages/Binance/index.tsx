@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 import PairContractAbi from '../../abis/pairGetter.json';
 import Erc20Abi from '../../abis/erc20.json';
+import axios, { AxiosResponse } from 'axios';
+import { bscPools } from '../../constants/bsc';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
@@ -18,6 +20,7 @@ const Binance = () => {
     pairName: '',
     liquidity: 0,
     liquiditySymbol: '',
+    liquidityUSD: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -72,6 +75,16 @@ const Binance = () => {
         return;
       }
 
+      const coingeckoId = bscPools.find(
+        (pool) => pool.address === pairToken
+      )?.coingeckoId;
+
+      const { data }: AxiosResponse = await axios.get(
+        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
+      );
+
+      console.log(data[`${coingeckoId}`].usd);
+
       const erc20Contract = new bscMainnet.eth.Contract(
         Erc20Abi as any,
         checksummedAddress
@@ -102,6 +115,9 @@ const Binance = () => {
         pairName: liquiditySymbol,
         liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
         liquiditySymbol,
+        liquidityUSD:
+          (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
+          data[`${coingeckoId}`].usd,
       });
 
       setError('');
@@ -146,21 +162,11 @@ const Binance = () => {
             className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
             onChange={(e) => setPairToken(e.target.value)}
           >
-            <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">
-              WBNB
-            </option>
-            <option value="0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56">
-              BUSD
-            </option>
-            <option value="0x55d398326f99059fF775485246999027B3197955">
-              USDT
-            </option>
-            <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">
-              USDC
-            </option>
-            <option value="0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3">
-              DAI
-            </option>
+            {bscPools.map((pool) => (
+              <option key={pool.symbol} value={pool.address}>
+                {pool.symbol}
+              </option>
+            ))}
           </select>
         </div>
         <div className="mt-6">
@@ -183,7 +189,12 @@ const Binance = () => {
                 <div>Decimals: {content.decimals}</div>
                 <div>
                   Liquidity: {content.liquidity.toFixed(4)}{' '}
-                  {content.liquiditySymbol}
+                  {content.liquiditySymbol} (
+                  {content.liquidityUSD.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                  })}
+                  )
                 </div>
                 <div>Pair Address: {content.pairAddress}</div>
                 <div>
