@@ -39,9 +39,9 @@ const Ethereum = () => {
     e.preventDefault();
     setLoading(true);
 
-    const checksummedAddress = await web3.utils.toChecksumAddress(address);
-
     try {
+      const checksummedAddress = await web3.utils.toChecksumAddress(address);
+
       const ethMainnet = new Web3(
         process.env.REACT_APP_INFURA_MAINNET_URL as string
       );
@@ -110,6 +110,7 @@ const Ethereum = () => {
       setLoading(false);
     } catch (error) {
       setError('Something went wrong, please try again');
+      setLoading(false);
     }
   };
   return (

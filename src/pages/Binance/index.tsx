@@ -6,7 +6,7 @@ import Erc20Abi from '../../abis/erc20.json';
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
   const [pairToken, setPairToken] = useState(
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,WBNB'
+    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +16,8 @@ const Binance = () => {
     decimals: '',
     pairAddress: '',
     pairName: '',
+    liquidity: 0,
+    liquiditySymbol: '',
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -37,55 +39,77 @@ const Binance = () => {
     e.preventDefault();
     setLoading(true);
 
-    const checksummedAddress = await web3.utils.toChecksumAddress(address);
+    try {
+      const checksummedAddress = await web3.utils.toChecksumAddress(address);
 
-    const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
-    const addressIsContract = await bscMainnet.eth.getCode(checksummedAddress);
+      const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
+      const addressIsContract = await bscMainnet.eth.getCode(
+        checksummedAddress
+      );
 
-    if (addressIsContract === '0x') {
-      setContent({ ...content, name: '' });
-      setError('Address is not a contract');
+      if (addressIsContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('Address is not a contract');
+        setLoading(false);
+        return;
+      }
+
+      const pairAddress = await pairContract.methods
+        .getPair(
+          pairToken,
+          checksummedAddress,
+          process.env.REACT_APP_PANCAKE_SWAP_FACTORY_ADDRESS,
+          process.env.REACT_APP_PANCAKE_SWAP_HASH
+        )
+        .call();
+
+      const isContract = await bscMainnet.eth.getCode(pairAddress);
+
+      if (isContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('No liquidity found for this token');
+        setLoading(false);
+        return;
+      }
+
+      const erc20Contract = new bscMainnet.eth.Contract(
+        Erc20Abi as any,
+        checksummedAddress
+      );
+
+      const poolErc20Contract = new bscMainnet.eth.Contract(
+        Erc20Abi as any,
+        pairToken
+      );
+
+      const name = await erc20Contract.methods.name().call();
+      const symbol = await erc20Contract.methods.symbol().call();
+      const decimals = await erc20Contract.methods.decimals().call();
+
+      const liquidityBalance = await poolErc20Contract.methods
+        .balanceOf(pairAddress)
+        .call();
+      const liquidityDecimals = await poolErc20Contract.methods
+        .decimals()
+        .call();
+      const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
+
+      setContent({
+        name,
+        symbol,
+        decimals,
+        pairAddress,
+        pairName: liquiditySymbol,
+        liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
+        liquiditySymbol,
+      });
+
+      setError('');
       setLoading(false);
-      return;
-    }
-
-    const pairAddress = await pairContract.methods
-      .getPair(
-        pairToken?.split(',')[0] as string,
-        checksummedAddress,
-        process.env.REACT_APP_PANCAKE_SWAP_FACTORY_ADDRESS,
-        process.env.REACT_APP_PANCAKE_SWAP_HASH
-      )
-      .call();
-
-    const isContract = await bscMainnet.eth.getCode(pairAddress);
-
-    if (isContract === '0x') {
-      setContent({ ...content, name: '' });
-      setError('No liquidity found for this token');
+    } catch (error) {
+      setError('Something went wrong, please try again');
       setLoading(false);
-      return;
     }
-
-    const erc20Contract = new bscMainnet.eth.Contract(
-      Erc20Abi as any,
-      checksummedAddress
-    );
-
-    const name = await erc20Contract.methods.name().call();
-    const symbol = await erc20Contract.methods.symbol().call();
-    const decimals = await erc20Contract.methods.decimals().call();
-
-    setContent({
-      name,
-      symbol,
-      decimals,
-      pairAddress,
-      pairName: pairToken?.split(',')[1] as string,
-    });
-
-    setError('');
-    setLoading(false);
   };
   return (
     <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
@@ -122,17 +146,20 @@ const Binance = () => {
             className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
             onChange={(e) => setPairToken(e.target.value)}
           >
-            <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,WBNB">
+            <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">
               WBNB
             </option>
-            <option value="0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56,BUSD">
+            <option value="0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56">
               BUSD
             </option>
-            <option value="0x55d398326f99059fF775485246999027B3197955,USDT">
+            <option value="0x55d398326f99059fF775485246999027B3197955">
               USDT
             </option>
-            <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d,USDC">
+            <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">
               USDC
+            </option>
+            <option value="0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3">
+              DAI
             </option>
           </select>
         </div>
@@ -154,6 +181,10 @@ const Binance = () => {
                 <div>Name: {content.name}</div>
                 <div>Symbol: {content.symbol}</div>
                 <div>Decimals: {content.decimals}</div>
+                <div>
+                  Liquidity: {content.liquidity.toFixed(4)}{' '}
+                  {content.liquiditySymbol}
+                </div>
                 <div>Pair Address: {content.pairAddress}</div>
                 <div>
                   Pool:{' '}
