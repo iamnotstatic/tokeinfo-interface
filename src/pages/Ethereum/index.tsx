@@ -6,7 +6,7 @@ import Erc20Abi from '../../abis/erc20.json';
 const Ethereum = () => {
   const [address, setAddress] = useState('0x...');
   const [pairToken, setPairToken] = useState(
-    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,WETH'
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +16,8 @@ const Ethereum = () => {
     decimals: '',
     pairAddress: '',
     pairName: '',
+    liquidity: 0,
+    liquiditySymbol: '',
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -39,55 +41,76 @@ const Ethereum = () => {
 
     const checksummedAddress = await web3.utils.toChecksumAddress(address);
 
-    const bscMainnet = new Web3(
-      process.env.REACT_APP_INFURA_MAINNET_URL as string
-    );
-    const addressIsContract = await bscMainnet.eth.getCode(checksummedAddress);
+    try {
+      const ethMainnet = new Web3(
+        process.env.REACT_APP_INFURA_MAINNET_URL as string
+      );
+      const addressIsContract = await ethMainnet.eth.getCode(
+        checksummedAddress
+      );
 
-    if (addressIsContract === '0x') {
-      setContent({ ...content, name: '' });
-      setError('Address is not a contract');
+      if (addressIsContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('Address is not a contract');
+        setLoading(false);
+        return;
+      }
+
+      const pairAddress = await pairContract.methods
+        .getPair(
+          pairToken,
+          checksummedAddress,
+          process.env.REACT_APP_UNISWAP_FACTORY_ADDRESS,
+          process.env.REACT_APP_UNISWAP_HASH
+        )
+        .call();
+
+      const isContract = await ethMainnet.eth.getCode(pairAddress);
+
+      if (isContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('No liquidity found for this token');
+        setLoading(false);
+        return;
+      }
+
+      const erc20Contract = new ethMainnet.eth.Contract(
+        Erc20Abi as any,
+        checksummedAddress
+      );
+
+      const poolErc20Contract = new ethMainnet.eth.Contract(
+        Erc20Abi as any,
+        pairToken
+      );
+
+      const name = await erc20Contract.methods.name().call();
+      const symbol = await erc20Contract.methods.symbol().call();
+      const decimals = await erc20Contract.methods.decimals().call();
+
+      const liquidityBalance = await poolErc20Contract.methods
+        .balanceOf(pairAddress)
+        .call();
+      const liquidityDecimals = await poolErc20Contract.methods
+        .decimals()
+        .call();
+      const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
+
+      setContent({
+        name,
+        symbol,
+        decimals,
+        pairAddress,
+        pairName: liquiditySymbol,
+        liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
+        liquiditySymbol,
+      });
+
+      setError('');
       setLoading(false);
-      return;
+    } catch (error) {
+      setError('Something went wrong, please try again');
     }
-
-    const pairAddress = await pairContract.methods
-      .getPair(
-        pairToken?.split(',')[0] as string,
-        checksummedAddress,
-        process.env.REACT_APP_UNISWAP_FACTORY_ADDRESS,
-        process.env.REACT_APP_UNISWAP_HASH
-      )
-      .call();
-
-    const isContract = await bscMainnet.eth.getCode(pairAddress);
-
-    if (isContract === '0x') {
-      setContent({ ...content, name: '' });
-      setError('No liquidity found for this token');
-      setLoading(false);
-      return;
-    }
-
-    const erc20Contract = new bscMainnet.eth.Contract(
-      Erc20Abi as any,
-      checksummedAddress
-    );
-
-    const name = await erc20Contract.methods.name().call();
-    const symbol = await erc20Contract.methods.symbol().call();
-    const decimals = await erc20Contract.methods.decimals().call();
-
-    setContent({
-      name,
-      symbol,
-      decimals,
-      pairAddress,
-      pairName: pairToken?.split(',')[1] as string,
-    });
-
-    setError('');
-    setLoading(false);
   };
   return (
     <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
@@ -124,14 +147,17 @@ const Ethereum = () => {
             className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
             onChange={(e) => setPairToken(e.target.value)}
           >
-            <option value="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,WETH">
+            <option value="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2">
               WETH
             </option>
-            <option value="0xdAC17F958D2ee523a2206206994597C13D831ec7,USDT">
+            <option value="0xdAC17F958D2ee523a2206206994597C13D831ec7">
               USDT
             </option>
-            <option value="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,USDC">
+            <option value="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48">
               USDC
+            </option>
+            <option value="0x6B175474E89094C44Da98b954EedeAC495271d0F">
+              DAI
             </option>
           </select>
         </div>
@@ -153,6 +179,10 @@ const Ethereum = () => {
                 <div>Name: {content.name}</div>
                 <div>Symbol: {content.symbol}</div>
                 <div>Decimals: {content.decimals}</div>
+                <div>
+                  Liquidity: {content.liquidity.toFixed(4)}{' '}
+                  {content.liquiditySymbol}
+                </div>
                 <div>Pair Address: {content.pairAddress}</div>
                 <div>
                   Pool:{' '}
