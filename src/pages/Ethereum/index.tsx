@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { toast } from 'react-toastify';
 import Web3 from 'web3';
 import PairContractAbi from '../../abis/pairGetter.json';
 import Erc20Abi from '../../abis/erc20.json';
@@ -127,8 +129,21 @@ const Ethereum = () => {
       setError('Something went wrong, please try again');
     }
   };
+
+  const onCopy = () => {
+    toast.success('Address copied to clipboard', {
+      position: 'top-right',
+      autoClose: 1500,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'dark',
+    });
+  };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
+    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded-2xl overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
       <form className="w-full p-5" onSubmit={onGetPair}>
         {error && (
           <div
@@ -180,10 +195,10 @@ const Ethereum = () => {
         </div>
 
         {content.name && (
-          <div className="mt-6">
+          <div className="mt-6 text-center">
             <div className="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
-              <strong className="font-bold">Token Info</strong>
-              <span className="block sm:inline">
+              <strong className="font-bold text-left">Token Info</strong>
+              <div className="sm:inline block text-left">
                 <div>Name: {content.name}</div>
                 <div>Symbol: {content.symbol}</div>
                 <div>Decimals: {content.decimals}</div>
@@ -199,7 +214,20 @@ const Ethereum = () => {
                     )
                   </span>
                 </div>
-                <div>Pair Address: {content.pairAddress}</div>
+                <div className="cursor-pointer">
+                  Pair Address:{' '}
+                  <CopyToClipboard
+                    options={{ message: '' }}
+                    text="Hello!"
+                    onCopy={() => onCopy()}
+                  >
+                    <span>
+                      {content.pairAddress?.slice(0, 6)} ...{' '}
+                      {content.pairAddress?.slice(-5)}{' '}
+                      <i className="fa fa-copy"></i>
+                    </span>
+                  </CopyToClipboard>
+                </div>
                 <div>
                   Pool:{' '}
                   <a
@@ -211,7 +239,7 @@ const Ethereum = () => {
                     {content.symbol}/{content.pairName}
                   </a>
                 </div>
-              </span>
+              </div>
             </div>
           </div>
         )}
