@@ -6,11 +6,16 @@ import PairContractAbi from '../../abis/pairGetter.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { ethPools } from '../../constants/eth';
+import { getLiquidityLocks, ILiquidityLock } from '../../utils';
+import Moment from 'react-moment';
 
 const Ethereum = () => {
   const [address, setAddress] = useState('0x...');
   const [pairToken, setPairToken] = useState(
     '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+  );
+  const [liquidityLocks, setLiquidityLocks] = useState<ILiquidityLock[] | []>(
+    []
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,6 +113,12 @@ const Ethereum = () => {
         .call();
       const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
 
+      const liquidityLocks = await getLiquidityLocks(
+        ethMainnet,
+        pairAddress,
+        process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string
+      );
+
       setContent({
         name,
         symbol,
@@ -120,6 +131,8 @@ const Ethereum = () => {
           (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
           data[`${coingeckoId}`].usd,
       });
+
+      setLiquidityLocks(liquidityLocks);
 
       setError('');
       setLoading(false);
@@ -143,7 +156,7 @@ const Ethereum = () => {
     });
   };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded-2xl overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
+    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded-2xl p-4 sm:flex dark:bg-gray-800 mt-10">
       <form className="w-full p-5" onSubmit={onGetPair}>
         {error && (
           <div
@@ -198,13 +211,24 @@ const Ethereum = () => {
           <div className="mt-6 text-center">
             <div className="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
               <strong className="font-bold text-left">Token Info</strong>
-              <div className="sm:inline block text-left">
-                <div>Name: {content.name}</div>
-                <div>Symbol: {content.symbol}</div>
-                <div>Decimals: {content.decimals}</div>
+              <div className="text-left mb-3">
                 <div>
-                  Liquidity: {content.liquidity.toFixed(4)}{' '}
-                  {content.liquiditySymbol}{' '}
+                  Name: <span className="text-gray-500">{content.name}</span>
+                </div>
+                <div>
+                  Symbol:{' '}
+                  <span className="text-gray-500">{content.symbol}</span>
+                </div>
+                <div>
+                  Decimals:{' '}
+                  <span className="text-gray-500">{content.decimals}</span>
+                </div>
+                <div>
+                  Liquidity:{' '}
+                  <span className="text-gray-500">
+                    {content.liquidity.toFixed(4)} {' '}
+                    {content.liquiditySymbol}
+                  </span>
                   <span className="font-bold">
                     (
                     {content.liquidityUSD.toLocaleString('en-US', {
@@ -215,13 +239,12 @@ const Ethereum = () => {
                   </span>
                 </div>
                 <div className="cursor-pointer">
-                  Pair Address:{' '}
+                  Uniswap V2 pair:
                   <CopyToClipboard
-                    options={{ message: '' }}
-                    text="Hello!"
+                    text={content.pairAddress}
                     onCopy={() => onCopy()}
                   >
-                    <span>
+                    <span className="text-gray-500">
                       {content.pairAddress?.slice(0, 6)} ...{' '}
                       {content.pairAddress?.slice(-5)}{' '}
                       <i className="fa fa-copy"></i>
@@ -240,6 +263,65 @@ const Ethereum = () => {
                   </a>
                 </div>
               </div>
+
+              <h3>
+                <strong className="font-bold text-left mt-4">
+                  Liquidity Locks
+                </strong>
+              </h3>
+              <div className="flex mt-3 font-italic">
+                <div> Value </div>
+                <div className="flex-grow"></div>
+                <div> Unlock date </div>
+              </div>
+
+              {liquidityLocks.map((lock) => (
+                <div key={lock.id}>
+                  <div className="border-b-2">
+                    <div className="flex items-center">
+                      <div>
+                        <div className="font-bold"> $25,474.81 </div>
+                        <div className="text-xs text-gray-500">
+                          {lock.amount.toLocaleString()} univ2
+                        </div>
+                      </div>
+                      <div className="flex-grow" />
+                      <div className="text-right">
+                        <div className="font-bold">
+                          <Moment fromNow>{lock.unlockDate}</Moment>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <Moment format="DD/MM/YYYY h:mm">
+                            {lock.unlockDate}
+                          </Moment>
+                        </div>
+                      </div>
+                      <i
+                        aria-hidden="true"
+                        className="fa fa-lock text-lg text-green-500 ml-4"
+                      />
+                    </div>
+                    <div>
+                      <div className="p-2">
+                        <CopyToClipboard
+                          text={lock.owner}
+                          onCopy={() => onCopy()}
+                        >
+                          <div>
+                            Owner:
+                            <span className="cursor-pointer text-gray-500">
+                              {' '}
+                              {lock.owner?.slice(0, 6)} ...{' '}
+                              {lock.owner?.slice(-5)}{' '}
+                              <i className="fa fa-copy"></i>{' '}
+                            </span>
+                          </div>
+                        </CopyToClipboard>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
