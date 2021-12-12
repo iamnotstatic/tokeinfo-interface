@@ -28,6 +28,7 @@ const Ethereum = () => {
     liquidity: 0,
     liquiditySymbol: '',
     liquidityUSD: 0,
+    tokenPoolSupply: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -108,7 +109,13 @@ const Ethereum = () => {
       const liquidityBalance = await poolErc20Contract.methods
         .balanceOf(pairAddress)
         .call();
-      const liquidityDecimals = await poolErc20Contract.methods
+
+      const tokenPoolSupply = await erc20Contract.methods
+        .balanceOf(pairAddress)
+        .call();
+
+    
+     const liquidityDecimals = await poolErc20Contract.methods
         .decimals()
         .call();
       const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
@@ -130,6 +137,7 @@ const Ethereum = () => {
         liquidityUSD:
           (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
           data[`${coingeckoId}`].usd,
+        tokenPoolSupply: parseInt(tokenPoolSupply) / 10 ** decimals,
       });
 
       setLiquidityLocks(liquidityLocks);
@@ -249,6 +257,16 @@ const Ethereum = () => {
                       <i className="fa fa-copy"></i>
                     </span>
                   </CopyToClipboard>
+                </div>
+                <div>
+                  Pooled WETH:{' '}
+                  <span className="text-gray-500">
+                    {content.liquidity.toFixed(2)}
+                  </span>
+                </div>
+                <div>
+                  Pooled {content.name}:{' '}
+                  <span className="text-gray-500">{content.tokenPoolSupply.toFixed(2)}</span>
                 </div>
                 <div>
                   Pool:{' '}
