@@ -3,7 +3,7 @@ import github from '../../assets/images/github.png';
 
 const Foooter = () => {
   return (
-    <footer className="bg-gray-800 px-5 py-4 shadow-lg dark:bg-gray-800">
+    <footer className="bg-gray-800 px-5 py-4 shadow-lg dark:bg-gray-800 mt-5">
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex text-center justify-between">
         <div>
           <a

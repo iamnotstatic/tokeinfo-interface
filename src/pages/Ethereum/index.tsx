@@ -226,8 +226,7 @@ const Ethereum = () => {
                 <div>
                   Liquidity:{' '}
                   <span className="text-gray-500">
-                    {content.liquidity.toFixed(4)} {' '}
-                    {content.liquiditySymbol}
+                    {content.liquidity.toFixed(4)} {content.liquiditySymbol}
                   </span>
                   <span className="font-bold">
                     (
@@ -239,7 +238,7 @@ const Ethereum = () => {
                   </span>
                 </div>
                 <div className="cursor-pointer">
-                  Uniswap V2 pair:
+                  Uniswap V2 pair:{' '}
                   <CopyToClipboard
                     text={content.pairAddress}
                     onCopy={() => onCopy()}
@@ -288,17 +287,23 @@ const Ethereum = () => {
                       <div className="flex-grow" />
                       <div className="text-right">
                         <div className="font-bold">
-                          <Moment fromNow>{lock.unlockDate}</Moment>
+                          <Moment fromNow>
+                            {new Date(lock.unlockDate * 1000)}
+                          </Moment>
                         </div>
                         <div className="text-xs text-gray-500">
                           <Moment format="DD/MM/YYYY h:mm">
-                            {lock.unlockDate}
+                            {new Date(lock.unlockDate * 1000)}
                           </Moment>
                         </div>
                       </div>
                       <i
                         aria-hidden="true"
-                        className="fa fa-lock text-lg text-green-500 ml-4"
+                        className={`fa ${
+                          lock.expired ? 'fa-unlock' : 'fa-lock'
+                        } text-lg ${
+                          lock.expired ? 'text-red-500' : 'text-green-500'
+                        } ml-4`}
                       />
                     </div>
                     <div>

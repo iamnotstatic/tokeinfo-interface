@@ -4,11 +4,18 @@ import PairContractAbi from '../../abis/pairGetter.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { bscPools } from '../../constants/bsc';
+import { getLiquidityLocks, ILiquidityLock } from '../../utils';
+import { toast } from 'react-toastify';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import Moment from 'react-moment';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
   const [pairToken, setPairToken] = useState(
     '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
+  );
+  const [liquidityLocks, setLiquidityLocks] = useState<ILiquidityLock[] | []>(
+    []
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -105,6 +112,12 @@ const Binance = () => {
         .call();
       const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
 
+      const liquidityLocks = await getLiquidityLocks(
+        bscMainnet,
+        pairAddress,
+        process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string
+      );
+
       setContent({
         name,
         symbol,
@@ -118,6 +131,8 @@ const Binance = () => {
           data[`${coingeckoId}`].usd,
       });
 
+      setLiquidityLocks(liquidityLocks);
+
       setError('');
       setLoading(false);
     } catch (error) {
@@ -126,8 +141,21 @@ const Binance = () => {
       setError('Something went wrong, please try again');
     }
   };
+
+  const onCopy = () => {
+    toast.success('Address copied to clipboard', {
+      position: 'top-right',
+      autoClose: 1500,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'dark',
+    });
+  };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded overflow-hidden p-4 sm:flex dark:bg-gray-800 mt-20">
+    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded p-4 sm:flex dark:bg-gray-800 mt-5">
       <form className="w-full p-5" onSubmit={onGetPair}>
         {error && (
           <div
@@ -179,16 +207,26 @@ const Binance = () => {
         </div>
 
         {content.name && (
-          <div className="mt-6">
+          <div className="mt-6 text-center">
             <div className="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
-              <strong className="font-bold">Token Info</strong>
-              <span className="block sm:inline">
-                <div>Name: {content.name}</div>
-                <div>Symbol: {content.symbol}</div>
-                <div>Decimals: {content.decimals}</div>
+              <strong className="font-bold text-left">Token Info</strong>
+              <div className="text-left mb-3">
                 <div>
-                  Liquidity: {content.liquidity.toFixed(4)}{' '}
-                  {content.liquiditySymbol}{' '}
+                  Name: <span className="text-gray-500">{content.name}</span>
+                </div>
+                <div>
+                  Symbol:{' '}
+                  <span className="text-gray-500">{content.symbol}</span>
+                </div>
+                <div>
+                  Decimals:{' '}
+                  <span className="text-gray-500">{content.decimals}</span>
+                </div>
+                <div>
+                  Liquidity:{' '}
+                  <span className="text-gray-500">
+                    {content.liquidity.toFixed(4)} {content.liquiditySymbol}
+                  </span>
                   <span className="font-bold">
                     (
                     {content.liquidityUSD.toLocaleString('en-US', {
@@ -198,7 +236,19 @@ const Binance = () => {
                     )
                   </span>
                 </div>
-                <div>Pair Address: {content.pairAddress}</div>
+                <div className="cursor-pointer">
+                  Pancakeswap V2 pair:
+                  <CopyToClipboard
+                    text={content.pairAddress}
+                    onCopy={() => onCopy()}
+                  >
+                    <span className="text-gray-500">
+                      {content.pairAddress?.slice(0, 6)} ...{' '}
+                      {content.pairAddress?.slice(-5)}{' '}
+                      <i className="fa fa-copy"></i>
+                    </span>
+                  </CopyToClipboard>
+                </div>
                 <div>
                   Pool:{' '}
                   <a
@@ -210,7 +260,72 @@ const Binance = () => {
                     {content.symbol}/{content.pairName}
                   </a>
                 </div>
-              </span>
+              </div>
+
+              <h3>
+                <strong className="font-bold text-left mt-4">
+                  Liquidity Locks
+                </strong>
+              </h3>
+              <div className="flex mt-3 font-italic">
+                <div> Value </div>
+                <div className="flex-grow"></div>
+                <div> Unlock date </div>
+              </div>
+
+              {liquidityLocks.map((lock) => (
+                <div key={lock.id}>
+                  <div className="border-b-2">
+                    <div className="flex items-center">
+                      <div>
+                        <div className="font-bold"> $25,474.81 </div>
+                        <div className="text-xs text-gray-500">
+                          {lock.amount.toLocaleString()} univ2
+                        </div>
+                      </div>
+                      <div className="flex-grow" />
+                      <div className="text-right">
+                        <div className="font-bold">
+                          <Moment fromNow>
+                            {new Date(lock.unlockDate * 1000)}
+                          </Moment>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <Moment format="DD/MM/YYYY h:mm">
+                            {new Date(lock.unlockDate * 1000)}
+                          </Moment>
+                        </div>
+                      </div>
+                      <i
+                        aria-hidden="true"
+                        className={`fa ${
+                          lock.expired ? 'fa-unlock' : 'fa-lock'
+                        } text-lg ${
+                          lock.expired ? 'text-red-500' : 'text-green-500'
+                        } ml-4`}
+                      />
+                    </div>
+                    <div>
+                      <div className="p-2">
+                        <CopyToClipboard
+                          text={lock.owner}
+                          onCopy={() => onCopy()}
+                        >
+                          <div>
+                            Owner:
+                            <span className="cursor-pointer text-gray-500">
+                              {' '}
+                              {lock.owner?.slice(0, 6)} ...{' '}
+                              {lock.owner?.slice(-5)}{' '}
+                              <i className="fa fa-copy"></i>{' '}
+                            </span>
+                          </div>
+                        </CopyToClipboard>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
