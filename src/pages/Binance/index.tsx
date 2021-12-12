@@ -155,11 +155,11 @@ const Binance = () => {
     });
   };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded p-4 sm:flex dark:bg-gray-800 mt-5">
+    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded p-4 dark:bg-gray-800 mt-5">
       <form className="w-full p-5" onSubmit={onGetPair}>
         {error && (
           <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-5 rounded relative"
+            className="bg-red-100 text-center border border-red-400 text-red-700 px-4 py-3 mb-5 rounded relative"
             role="alert"
           >
             <strong className="font-bold">Error!</strong>
