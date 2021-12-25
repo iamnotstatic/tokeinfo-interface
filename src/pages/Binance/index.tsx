@@ -8,6 +8,7 @@ import { getLiquidityLocks, ILiquidityLock } from '../../utils';
 import { toast } from 'react-toastify';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import Moment from 'react-moment';
+import UniswapPairAbi from '../../abis/uniswapPair.json';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
@@ -25,9 +26,12 @@ const Binance = () => {
     decimals: '',
     pairAddress: '',
     pairName: '',
-    liquidity: 0,
-    liquiditySymbol: '',
-    liquidityUSD: 0,
+    liquidityPoolSupply: 0,
+    liquidityPoolSymbol: '',
+    liquidityPoolSupplyUSD: 0,
+    liquidityTokenPoolSupply: 0,
+    pairPoolSupply: 0,
+    totalLockedLiquidity: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -104,34 +108,62 @@ const Binance = () => {
       const symbol = await erc20Contract.methods.symbol().call();
       const decimals = await erc20Contract.methods.decimals().call();
 
-      const liquidityBalance = await poolErc20Contract.methods
-        .balanceOf(pairAddress)
+      // Init uniswap pair contract
+      const uniswapPairContract = new bscMainnet.eth.Contract(
+        UniswapPairAbi as any,
+        pairAddress
+      );
+
+      // Get liquidity pool supply
+      const pairPoolSupply = await uniswapPairContract.methods
+        .totalSupply()
         .call();
-      const liquidityDecimals = await poolErc20Contract.methods
+      const pairPoolDecimals = await uniswapPairContract.methods
         .decimals()
         .call();
-      const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
 
-      const liquidityLocks = await getLiquidityLocks(
-        bscMainnet,
-        pairAddress,
-        process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string
-      );
+      const poolReserves = await uniswapPairContract.methods
+        .getReserves()
+        .call();
+
+      const liquidityPoolSupply = poolReserves._reserve1;
+      const liquidityPoolDecimals = await poolErc20Contract.methods
+        .decimals()
+        .call();
+      const liquidityPoolSymbol = await poolErc20Contract.methods
+        .symbol()
+        .call();
+
+      const liquidityTokenPoolSupply = poolReserves._reserve0;
+
+      // Uncrypt locks
+      const { liquidityLocksData, totalLockedLiquidity } =
+        await getLiquidityLocks(
+          bscMainnet,
+          pairAddress,
+          process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
+          pairPoolDecimals
+        );
 
       setContent({
         name,
         symbol,
         decimals,
         pairAddress,
-        pairName: liquiditySymbol,
-        liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
-        liquiditySymbol,
-        liquidityUSD:
-          (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
+        pairName: liquidityPoolSymbol,
+        liquidityPoolSupply:
+          parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals,
+        liquidityPoolSymbol,
+        liquidityPoolSupplyUSD:
+          (parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals) *
           data[`${coingeckoId}`].usd,
+        liquidityTokenPoolSupply:
+          parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
+        pairPoolSupply: pairPoolSupply / 10 ** pairPoolDecimals,
+        totalLockedLiquidity: totalLockedLiquidity / 10 ** pairPoolDecimals,
       });
 
-      setLiquidityLocks(liquidityLocks);
+      setLiquidityLocks(liquidityLocksData);
 
       setError('');
       setLoading(false);
@@ -222,20 +254,6 @@ const Binance = () => {
                   Decimals:{' '}
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
-                <div>
-                  Liquidity:{' '}
-                  <span className="text-gray-500">
-                    {content.liquidity.toFixed(4)} {content.liquiditySymbol}
-                  </span>
-                  <span className="font-bold">
-                    (
-                    {content.liquidityUSD.toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                    })}
-                    )
-                  </span>
-                </div>
                 <div className="cursor-pointer">
                   Pancakeswap V2 pair:
                   <CopyToClipboard
@@ -253,6 +271,24 @@ const Binance = () => {
                   Pool:{' '}
                   <a
                     href={`${process.env.REACT_APP_BSC_SCAN_URL}address/${content.pairAddress}`}
+                    className="text-blue-500"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {content.symbol}/{content.pairName}
+                  </a>
+                </div>
+
+                <div>
+                  Total LP tokens:
+                  <span className="text-gray-500">
+                    {content.pairPoolSupply.toFixed(2)}
+                  </span>
+                </div>
+                <div>
+                  Total locked LP:
+                  <a
+                    href={`${process.env.REACT_APP_ETHER_SCAN_URL}address/${content.pairAddress}`}
                     className="text-blue-500"
                     target="_blank"
                     rel="noopener noreferrer"

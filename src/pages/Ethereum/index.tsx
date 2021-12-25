@@ -3,6 +3,7 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { toast } from 'react-toastify';
 import Web3 from 'web3';
 import PairContractAbi from '../../abis/pairGetter.json';
+import UniswapPairAbi from '../../abis/uniswapPair.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { ethPools } from '../../constants/eth';
@@ -25,10 +26,12 @@ const Ethereum = () => {
     decimals: '',
     pairAddress: '',
     pairName: '',
-    liquidity: 0,
-    liquiditySymbol: '',
-    liquidityUSD: 0,
-    tokenPoolSupply: 0,
+    liquidityPoolSupply: 0,
+    liquidityPoolSymbol: '',
+    liquidityPoolSupplyUSD: 0,
+    liquidityTokenPoolSupply: 0,
+    pairPoolSupply: 0,
+    totalLockedLiquidity: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -106,41 +109,62 @@ const Ethereum = () => {
       const symbol = await erc20Contract.methods.symbol().call();
       const decimals = await erc20Contract.methods.decimals().call();
 
-      const liquidityBalance = await poolErc20Contract.methods
-        .balanceOf(pairAddress)
-        .call();
+      // Init uniswap pair contract
+      const uniswapPairContract = new ethMainnet.eth.Contract(
+        UniswapPairAbi as any,
+        pairAddress
+      );
 
-      const tokenPoolSupply = await erc20Contract.methods
-        .balanceOf(pairAddress)
+      // Get liquidity pool supply
+      const pairPoolSupply = await uniswapPairContract.methods
+        .totalSupply()
         .call();
-
-    
-     const liquidityDecimals = await poolErc20Contract.methods
+      const pairPoolDecimals = await uniswapPairContract.methods
         .decimals()
         .call();
-      const liquiditySymbol = await poolErc20Contract.methods.symbol().call();
 
-      const liquidityLocks = await getLiquidityLocks(
-        ethMainnet,
-        pairAddress,
-        process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string
-      );
+      const poolReserves = await uniswapPairContract.methods
+        .getReserves()
+        .call();
+
+      const liquidityPoolSupply = poolReserves._reserve1;
+      const liquidityPoolDecimals = await poolErc20Contract.methods
+        .decimals()
+        .call();
+      const liquidityPoolSymbol = await poolErc20Contract.methods
+        .symbol()
+        .call();
+
+      const liquidityTokenPoolSupply = poolReserves._reserve0;
+
+      // Uncrypt locks
+      const { liquidityLocksData, totalLockedLiquidity } =
+        await getLiquidityLocks(
+          ethMainnet,
+          pairAddress,
+          process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
+          pairPoolDecimals
+        );
 
       setContent({
         name,
         symbol,
         decimals,
         pairAddress,
-        pairName: liquiditySymbol,
-        liquidity: parseInt(liquidityBalance) / 10 ** liquidityDecimals,
-        liquiditySymbol,
-        liquidityUSD:
-          (parseInt(liquidityBalance) / 10 ** liquidityDecimals) *
+        pairName: liquidityPoolSymbol,
+        liquidityPoolSupply:
+          parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals,
+        liquidityPoolSymbol,
+        liquidityPoolSupplyUSD:
+          (parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals) *
           data[`${coingeckoId}`].usd,
-        tokenPoolSupply: parseInt(tokenPoolSupply) / 10 ** decimals,
+        liquidityTokenPoolSupply:
+          parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
+        pairPoolSupply: pairPoolSupply / 10 ** pairPoolDecimals,
+        totalLockedLiquidity: totalLockedLiquidity / 10 ** pairPoolDecimals,
       });
 
-      setLiquidityLocks(liquidityLocks);
+      setLiquidityLocks(liquidityLocksData);
 
       setError('');
       setLoading(false);
@@ -231,20 +255,6 @@ const Ethereum = () => {
                   Decimals:{' '}
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
-                <div>
-                  Liquidity:{' '}
-                  <span className="text-gray-500">
-                    {content.liquidity.toFixed(4)} {content.liquiditySymbol}
-                  </span>
-                  <span className="font-bold">
-                    (
-                    {content.liquidityUSD.toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                    })}
-                    )
-                  </span>
-                </div>
                 <div className="cursor-pointer">
                   Uniswap V2 pair:{' '}
                   <CopyToClipboard
@@ -261,23 +271,45 @@ const Ethereum = () => {
                 <div>
                   Pooled WETH:{' '}
                   <span className="text-gray-500">
-                    {content.liquidity.toFixed(2)}
+                    {content.liquidityPoolSupply.toFixed(4)}{' '}
+                  </span>
+                  <span className="font-bold">
+                    (
+                    {content.liquidityPoolSupplyUSD.toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    })}
+                    )
                   </span>
                 </div>
                 <div>
                   Pooled {content.name}:{' '}
-                  <span className="text-gray-500">{content.tokenPoolSupply.toFixed(2)}</span>
+                  <span className="text-gray-500">
+                    {content.liquidityTokenPoolSupply.toLocaleString('en-US')}
+                  </span>
                 </div>
                 <div>
                   Pool:{' '}
                   <a
-                    href={`${process.env.REACT_APP_ETHER_SCAN_URL}address/${content.pairAddress}`}
+                    href={`${process.env.REACT_APP_UNISWAP_V2_URL}pair/${content.pairAddress}`}
                     className="text-blue-500"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     {content.symbol}/{content.pairName}
                   </a>
+                </div>
+                <div>
+                  Total LP tokens:{' '}
+                  <span className="text-gray-500">
+                    {content.pairPoolSupply.toLocaleString('en-US')}
+                  </span>
+                </div>
+                <div>
+                  Total locked LP:{' '}
+                  <span className="text-gray-500">
+                    {content.totalLockedLiquidity.toLocaleString('en-US')}
+                  </span>
                 </div>
               </div>
 
@@ -297,7 +329,7 @@ const Ethereum = () => {
                   <div className="border-b-2">
                     <div className="flex items-center">
                       <div>
-                        <div className="font-bold"> $25,474.81 </div>
+                        <div className="font-bold"></div>
                         <div className="text-xs text-gray-500">
                           {lock.amount.toLocaleString()} univ2
                         </div>

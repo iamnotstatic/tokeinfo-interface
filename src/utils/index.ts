@@ -12,9 +12,12 @@ export interface ILiquidityLock {
 export const getLiquidityLocks = async (
   web3: any,
   pair: string,
-  address: string
+  address: string,
+  decimals: number
 ) => {
   const liquidityLocksData = [];
+  let totalLockedLiquidity: number = 0;
+
   const currentTimestamp = new Date().valueOf() / 1000;
 
   const unicryptLocker = new web3.eth.Contract(unicryptLockerAbi, address);
@@ -24,21 +27,18 @@ export const getLiquidityLocks = async (
 
   for (let i = 0; i < getLocksLength; i++) {
     const lock = await unicryptLocker.methods.tokenLocks(pair, i).call();
-
-    if (parseInt(lock.lockDate) > currentTimestamp) {
-      
-    }
+    totalLockedLiquidity += parseInt(lock.amount, 10);
 
     liquidityLocksData.push({
       id: lock.lockID,
       lockDate: parseInt(lock.lockDate),
-      amount: lock.amount / 10 ** 18,
-      initialAmount: lock.initialAmount / 10 ** 18,
+      amount: lock.amount / 10 ** decimals,
+      initialAmount: lock.initialAmount / 10 ** decimals,
       unlockDate: parseInt(lock.unlockDate),
       owner: lock.owner,
       expired: parseInt(lock.unlockDate) < currentTimestamp,
     });
   }
 
-  return liquidityLocksData;
+  return { liquidityLocksData, totalLockedLiquidity };
 };
