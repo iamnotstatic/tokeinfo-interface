@@ -141,7 +141,7 @@ const Binance = () => {
         await getLiquidityLocks(
           bscMainnet,
           pairAddress,
-          process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
+          process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
 
@@ -168,6 +168,7 @@ const Binance = () => {
       setError('');
       setLoading(false);
     } catch (error) {
+      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
       setError('Something went wrong, please try again');
@@ -268,6 +269,26 @@ const Binance = () => {
                   </CopyToClipboard>
                 </div>
                 <div>
+                  Pooled {content.liquidityPoolSymbol}:{' '}
+                  <span className="text-gray-500">
+                    {content.liquidityPoolSupply.toFixed(4)}{' '}
+                  </span>
+                  <span className="font-bold">
+                    (
+                    {content.liquidityPoolSupplyUSD.toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    })}
+                    )
+                  </span>
+                </div>
+                <div>
+                  Pooled {content.name}:{' '}
+                  <span className="text-gray-500">
+                    {content.liquidityTokenPoolSupply.toLocaleString('en-US')}
+                  </span>
+                </div>
+                <div>
                   Pool:{' '}
                   <a
                     href={`${process.env.REACT_APP_BSC_SCAN_URL}address/${content.pairAddress}`}
@@ -286,15 +307,10 @@ const Binance = () => {
                   </span>
                 </div>
                 <div>
-                  Total locked LP:
-                  <a
-                    href={`${process.env.REACT_APP_ETHER_SCAN_URL}address/${content.pairAddress}`}
-                    className="text-blue-500"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {content.symbol}/{content.pairName}
-                  </a>
+                  Total locked LP:{' '}
+                  <span className="text-gray-500">
+                    {content.totalLockedLiquidity.toLocaleString('en-US')}
+                  </span>
                 </div>
               </div>
 

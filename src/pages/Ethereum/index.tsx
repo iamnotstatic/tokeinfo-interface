@@ -269,7 +269,7 @@ const Ethereum = () => {
                   </CopyToClipboard>
                 </div>
                 <div>
-                  Pooled WETH:{' '}
+                  Pooled {content.liquidityPoolSymbol}:{' '}
                   <span className="text-gray-500">
                     {content.liquidityPoolSupply.toFixed(4)}{' '}
                   </span>
@@ -291,7 +291,7 @@ const Ethereum = () => {
                 <div>
                   Pool:{' '}
                   <a
-                    href={`${process.env.REACT_APP_UNISWAP_V2_URL}pair/${content.pairAddress}`}
+                    href={`${process.env.REACT_APP_ETHER_SCAN_URL}address/${content.pairAddress}`}
                     className="text-blue-500"
                     target="_blank"
                     rel="noopener noreferrer"
