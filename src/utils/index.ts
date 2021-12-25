@@ -28,7 +28,7 @@ export const getLiquidityLocks = async (
   for (let i = 0; i < getLocksLength; i++) {
     const lock = await unicryptLocker.methods.tokenLocks(pair, i).call();
 
-    if (parseInt(lock.unlockDate) < currentTimestamp) {
+    if (currentTimestamp < parseInt(lock.unlockDate)) {
       totalLockedLiquidity += parseInt(lock.amount, 10);
     }
 

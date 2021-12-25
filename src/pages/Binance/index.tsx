@@ -316,7 +316,7 @@ const Binance = () => {
 
               <h3>
                 <strong className="font-bold text-left mt-4">
-                  Liquidity Locks
+                  Liquidity Locks (Unicrypt)
                 </strong>
               </h3>
               <div className="flex mt-3 font-italic">
@@ -330,7 +330,7 @@ const Binance = () => {
                   <div className="border-b-2">
                     <div className="flex items-center">
                       <div>
-                        <div className="font-bold"> $25,474.81 </div>
+                        <div className="font-bold"></div>
                         <div className="text-xs text-gray-500">
                           {lock.amount.toLocaleString()} univ2
                         </div>

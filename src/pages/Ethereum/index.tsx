@@ -315,7 +315,7 @@ const Ethereum = () => {
 
               <h3>
                 <strong className="font-bold text-left mt-4">
-                  Liquidity Locks
+                  Liquidity Locks (Unicrypt)
                 </strong>
               </h3>
               <div className="flex mt-3 font-italic">
