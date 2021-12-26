@@ -168,10 +168,9 @@ const Binance = () => {
       setError('');
       setLoading(false);
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
-      setError('Something went wrong, please try again');
+      setError('Something went wrong, Please check address and try again');
     }
   };
 
