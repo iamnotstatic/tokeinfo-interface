@@ -13,7 +13,7 @@ Get token liquidity pool info with ease
 
 ```bash
 # Clone Repo
-$ git clone `https://github.com/iamnotstatic/pair-getter-interface`
+$ git clone `https://github.com/iamnotstatic/tokeinfo-interface`
 
 ```
 

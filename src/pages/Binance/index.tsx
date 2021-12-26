@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import PairContractAbi from '../../abis/pairGetter.json';
+import PairContractAbi from '../../abis/Tokeinfo.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { bscPools } from '../../constants/bsc';
