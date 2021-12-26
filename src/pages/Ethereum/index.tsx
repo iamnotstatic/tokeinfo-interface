@@ -235,7 +235,7 @@ const Ethereum = () => {
               loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
             }`}
           >
-            {loading ? 'Getting Pair...' : 'Get Pair'}
+            {loading ? 'Getting Token info...' : 'Get Info'}
           </button>
         </div>
 

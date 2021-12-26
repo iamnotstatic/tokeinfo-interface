@@ -1,11 +1,11 @@
 
 <div align="center">
 
-## Pair getter Frontend 🚀🚀
+## Tokeinfo Frontend 🚀🚀
 
 [![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-red.svg?style=flat)](http://makeapullrequest.com)
 
-Get liquidity pair addresses with ease
+Get token liquidity pool info with ease
 
 </div>
 

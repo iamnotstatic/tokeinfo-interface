@@ -235,7 +235,7 @@ const Binance = () => {
               loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
             }`}
           >
-            {loading ? 'Getting Pair...' : 'Get Pair'}
+            {loading ? 'Getting Token info...' : 'Get Info'}
           </button>
         </div>
 
@@ -301,9 +301,9 @@ const Binance = () => {
                 </div>
 
                 <div>
-                  Total LP tokens:
+                  Total LP tokens: {' '}
                   <span className="text-gray-500">
-                    {content.pairPoolSupply.toFixed(2)}
+                    {content.pairPoolSupply.toLocaleString('en-US')}
                   </span>
                 </div>
                 <div>
