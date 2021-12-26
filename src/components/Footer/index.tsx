@@ -15,7 +15,7 @@ const Foooter = () => {
           </a>
         </div>
         <div className="text-white">
-          Made with ❤️ by{' '}
+         Made for th Web3 Community by{' '}
           <a href="https://twitter.com/iamnotstatic" target="_blank" rel="noreferrer">
             <span className="text-blue-400 dark:text-gray-400">
               iamnotstatic
