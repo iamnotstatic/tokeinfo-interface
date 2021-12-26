@@ -7,7 +7,7 @@ const Foooter = () => {
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex text-center justify-between">
         <div>
           <a
-            href={`https://github.com/iamnotstatic/pair-getter-contracts`}
+            href={`https://github.com/iamnotstatic/tokeinfo-contracts`}
             target="_blank"
             rel="noreferrer"
           >
@@ -24,7 +24,7 @@ const Foooter = () => {
         </div>
         <div>
           <a
-            href={`https://github.com/iamnotstatic/pair-getter-interface`}
+            href={`https://github.com/iamnotstatic/tokeinfo-interface`}
             target="_blank"
             rel="noreferrer"
           >
