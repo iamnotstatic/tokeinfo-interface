@@ -235,7 +235,7 @@ const Binance = () => {
               loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
             }`}
           >
-            {loading ? 'Getting Token info...' : 'Get Info'}
+            {loading ? 'Getting Pool Info...' : 'Get Info'}
           </button>
         </div>
 
@@ -271,7 +271,7 @@ const Binance = () => {
                 <div>
                   Pooled {content.liquidityPoolSymbol}:{' '}
                   <span className="text-gray-500">
-                    {content.liquidityPoolSupply.toFixed(4)}{' '}
+                    {content.liquidityPoolSupply.toLocaleString('en-US')}{' '}
                   </span>
                   <span className="font-bold">
                     (
