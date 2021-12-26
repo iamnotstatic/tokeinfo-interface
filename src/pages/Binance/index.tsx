@@ -256,7 +256,7 @@ const Binance = () => {
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
                 <div className="cursor-pointer">
-                  Pancakeswap V2 pair:
+                  Pancakeswap V2 pair: {' '}
                   <CopyToClipboard
                     text={content.pairAddress}
                     onCopy={() => onCopy()}

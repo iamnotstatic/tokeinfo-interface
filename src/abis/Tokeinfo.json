@@ -1,33 +1,33 @@
 [
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "tokenA",
-          "type": "address"
-        },
-        {
-          "name": "tokenB",
-          "type": "address"
-        },
-        {
-          "name": "factory",
-          "type": "address"
-        },
-        {
-          "name": "hash",
-          "type": "bytes"
-        }
-      ],
-      "name": "getPair",
-      "outputs": [
-        {
-          "name": "pair",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "pure",
-      "type": "function"
-    }
-  ]
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "tokenA",
+        "type": "address"
+      },
+      {
+        "name": "tokenB",
+        "type": "address"
+      },
+      {
+        "name": "factory",
+        "type": "address"
+      },
+      {
+        "name": "hash",
+        "type": "bytes"
+      }
+    ],
+    "name": "getPair",
+    "outputs": [
+      {
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]
