@@ -32,6 +32,7 @@ const Binance = () => {
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
     totalLockedLiquidity: 0,
+    lockedPercentage: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -145,6 +146,14 @@ const Binance = () => {
           pairPoolDecimals
         );
 
+      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+      const intialTotalLockedLiquidity =
+        totalLockedLiquidity / 10 ** pairPoolDecimals;
+
+      // Percentage of locked liquidity
+      const lockedPercentage =
+        (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
+
       setContent({
         name,
         symbol,
@@ -159,8 +168,9 @@ const Binance = () => {
           data[`${coingeckoId}`].usd,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
-        pairPoolSupply: pairPoolSupply / 10 ** pairPoolDecimals,
-        totalLockedLiquidity: totalLockedLiquidity / 10 ** pairPoolDecimals,
+        pairPoolSupply: initialPairPoolSupply,
+        totalLockedLiquidity: intialTotalLockedLiquidity,
+        lockedPercentage,
       });
 
       setLiquidityLocks(liquidityLocksData);
@@ -255,7 +265,7 @@ const Binance = () => {
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
                 <div className="cursor-pointer">
-                  Pancakeswap V2 pair: {' '}
+                  Pancakeswap V2 pair:{' '}
                   <CopyToClipboard
                     text={content.pairAddress}
                     onCopy={() => onCopy()}
@@ -300,7 +310,7 @@ const Binance = () => {
                 </div>
 
                 <div>
-                  Total LP tokens: {' '}
+                  Total LP tokens:{' '}
                   <span className="text-gray-500">
                     {content.pairPoolSupply.toLocaleString('en-US')}
                   </span>
@@ -310,6 +320,10 @@ const Binance = () => {
                   <span className="text-gray-500">
                     {content.totalLockedLiquidity.toLocaleString('en-US')}
                   </span>
+                </div>
+                <div className="font-bold text-center text-lg mt-2">
+                  {content.lockedPercentage.toFixed(1)}% is actually locked{' '}
+                  <i className="fa fa-lock"></i>
                 </div>
               </div>
 

@@ -151,10 +151,9 @@ const Ethereum = () => {
       const intialTotalLockedLiquidity =
         totalLockedLiquidity / 10 ** pairPoolDecimals;
 
+      // Percentage of locked liquidity
       const lockedPercentage =
         (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
-
-      console.log(lockedPercentage);
 
       // Get Locked Percentage
       setContent({
@@ -323,7 +322,10 @@ const Ethereum = () => {
                     {content.totalLockedLiquidity.toLocaleString('en-US')}
                   </span>
                 </div>
-                <div className='font-bold text-center text-lg mt-2'>{content.lockedPercentage.toFixed(1)}% is actually locked <i className='fa fa-lock'></i></div>
+                <div className="font-bold text-center text-lg mt-2">
+                  {content.lockedPercentage.toFixed(1)}% is actually locked{' '}
+                  <i className="fa fa-lock"></i>
+                </div>
               </div>
 
               <h3>
