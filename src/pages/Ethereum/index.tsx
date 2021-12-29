@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { toast } from 'react-toastify';
 import Web3 from 'web3';
-import PairContractAbi from '../../abis/Tokeinfo.json';
+import PairContractAbi from '../../abis/tokeinfo.json';
 import UniswapPairAbi from '../../abis/uniswapPair.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
@@ -54,13 +54,13 @@ const Ethereum = () => {
     setLoading(true);
 
     try {
-      const checksummedAddress = await web3.utils.toChecksumAddress(address);
+      const tokenAddress = await web3.utils.toChecksumAddress(address);
 
       const ethMainnet = new Web3(
         process.env.REACT_APP_INFURA_MAINNET_URL as string
       );
       const addressIsContract = await ethMainnet.eth.getCode(
-        checksummedAddress
+        tokenAddress
       );
 
       if (addressIsContract === '0x') {
@@ -73,7 +73,7 @@ const Ethereum = () => {
       const pairAddress = await pairContract.methods
         .getPair(
           pairToken,
-          checksummedAddress,
+          tokenAddress,
           process.env.REACT_APP_UNISWAP_FACTORY_ADDRESS,
           process.env.REACT_APP_UNISWAP_HASH
         )
@@ -90,7 +90,7 @@ const Ethereum = () => {
 
       const erc20Contract = new ethMainnet.eth.Contract(
         Erc20Abi as any,
-        checksummedAddress
+        tokenAddress
       );
 
       const poolErc20Contract = new ethMainnet.eth.Contract(
@@ -142,7 +142,9 @@ const Ethereum = () => {
         await getLiquidityLocks(
           ethMainnet,
           pairAddress,
+          tokenAddress,
           process.env.REACT_APP_UNICRYPT_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
+          process.env.REACT_APP_PINKSALE_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
 

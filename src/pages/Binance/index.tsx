@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import PairContractAbi from '../../abis/Tokeinfo.json';
+import PairContractAbi from '../../abis/tokeinfo.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { bscPools } from '../../constants/bsc';
@@ -54,11 +54,11 @@ const Binance = () => {
     setLoading(true);
 
     try {
-      const checksummedAddress = await web3.utils.toChecksumAddress(address);
+      const tokenAddress = await web3.utils.toChecksumAddress(address);
 
       const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
       const addressIsContract = await bscMainnet.eth.getCode(
-        checksummedAddress
+        tokenAddress
       );
 
       if (addressIsContract === '0x') {
@@ -71,7 +71,7 @@ const Binance = () => {
       const pairAddress = await pairContract.methods
         .getPair(
           pairToken,
-          checksummedAddress,
+          tokenAddress,
           process.env.REACT_APP_PANCAKE_SWAP_FACTORY_ADDRESS,
           process.env.REACT_APP_PANCAKE_SWAP_HASH
         )
@@ -88,7 +88,7 @@ const Binance = () => {
 
       const erc20Contract = new bscMainnet.eth.Contract(
         Erc20Abi as any,
-        checksummedAddress
+        tokenAddress
       );
 
       const poolErc20Contract = new bscMainnet.eth.Contract(
@@ -141,7 +141,9 @@ const Binance = () => {
         await getLiquidityLocks(
           bscMainnet,
           pairAddress,
+          tokenAddress,
           process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
+          process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
 
@@ -168,6 +170,7 @@ const Binance = () => {
       setError('');
       setLoading(false);
     } catch (error) {
+      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
       setError('Something went wrong, Please check address and try again');
@@ -255,7 +258,7 @@ const Binance = () => {
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
                 <div className="cursor-pointer">
-                  Pancakeswap V2 pair: {' '}
+                  Pancakeswap V2 pair:{' '}
                   <CopyToClipboard
                     text={content.pairAddress}
                     onCopy={() => onCopy()}
@@ -300,7 +303,7 @@ const Binance = () => {
                 </div>
 
                 <div>
-                  Total LP tokens: {' '}
+                  Total LP tokens:{' '}
                   <span className="text-gray-500">
                     {content.pairPoolSupply.toLocaleString('en-US')}
                   </span>
