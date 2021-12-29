@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { toast } from 'react-toastify';
 import Web3 from 'web3';
-import PairContractAbi from '../../abis/Tokeinfo.json';
+import PairContractAbi from '../../abis/tokeinfo.json';
 import UniswapPairAbi from '../../abis/uniswapPair.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
@@ -32,6 +32,7 @@ const Ethereum = () => {
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
     totalLockedLiquidity: 0,
+    lockedPercentage: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -146,6 +147,16 @@ const Ethereum = () => {
           pairPoolDecimals
         );
 
+      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+      const intialTotalLockedLiquidity =
+        totalLockedLiquidity / 10 ** pairPoolDecimals;
+
+      const lockedPercentage =
+        (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
+
+      console.log(lockedPercentage);
+
+      // Get Locked Percentage
       setContent({
         name,
         symbol,
@@ -160,8 +171,9 @@ const Ethereum = () => {
           data[`${coingeckoId}`].usd,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
-        pairPoolSupply: pairPoolSupply / 10 ** pairPoolDecimals,
-        totalLockedLiquidity: totalLockedLiquidity / 10 ** pairPoolDecimals,
+        pairPoolSupply: initialPairPoolSupply,
+        totalLockedLiquidity: intialTotalLockedLiquidity,
+        lockedPercentage,
       });
 
       setLiquidityLocks(liquidityLocksData);
@@ -311,6 +323,7 @@ const Ethereum = () => {
                     {content.totalLockedLiquidity.toLocaleString('en-US')}
                   </span>
                 </div>
+                <div className='font-bold text-center text-lg mt-2'>{content.lockedPercentage.toFixed(1)}% is actually locked <i className='fa fa-lock'></i></div>
               </div>
 
               <h3>
