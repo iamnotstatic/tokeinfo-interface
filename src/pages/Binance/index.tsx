@@ -12,9 +12,6 @@ import UniswapPairAbi from '../../abis/uniswapPair.json';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
-  const [pairToken, setPairToken] = useState(
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
-  );
   const [liquidityLocks, setLiquidityLocks] = useState<ILiquidityLock[] | []>(
     []
   );
@@ -50,8 +47,9 @@ const Binance = () => {
     setWeb3(web3);
   }, []);
 
-  const onGetPair = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onGetPair = async (pairToken: string) => {
+    setError('');
+    setContent({ ...content, name: '' });
     setLoading(true);
 
     try {
@@ -82,7 +80,7 @@ const Binance = () => {
 
       if (isContract === '0x') {
         setContent({ ...content, name: '' });
-        setError('No liquidity found for this token');
+        setError('No liquidity found for this pool token');
         setLoading(false);
         return;
       }
@@ -198,7 +196,7 @@ const Binance = () => {
   };
   return (
     <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded p-4 dark:bg-gray-800 mt-5">
-      <form className="w-full p-5" onSubmit={onGetPair}>
+      <form className="w-full p-5">
         {error && (
           <div
             className="bg-red-100 text-center border border-red-400 text-red-700 px-4 py-3 mb-5 rounded relative"
@@ -226,27 +224,39 @@ const Binance = () => {
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
           Select Pool Token
         </label>
-        <div className="">
-          <select
-            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
-            onChange={(e) => setPairToken(e.target.value)}
+        <div className="flex flex-wrap text-center">
+          {bscPools.slice(0, -1).map((pool) => (
+            <div
+              className="flex-auto text-center"
+              onClick={() => onGetPair(pool.address)}
+            >
+              <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
+                <img src={pool.logo} alt={pool.symbol} className="w-8" />
+              </div>
+            </div>
+          ))}
+          <div
+            className="flex text-center"
+            onClick={() => onGetPair(bscPools.slice(-1)[0].address)}
           >
-            {bscPools.map((pool) => (
-              <option key={pool.symbol} value={pool.address}>
-                {pool.symbol}
-              </option>
-            ))}
-          </select>
+            <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
+              <img
+                src={bscPools.slice(-1)[0].logo}
+                alt={bscPools.slice(-1)[0].symbol}
+                className="w-8"
+              />
+            </div>
+          </div>
         </div>
-        <div className="mt-6">
-          <button
-            className={`bg-gray-800 w-full py-4 px-8 rounded-lg text-gray-50 ${
-              loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
-            }`}
-          >
-            {loading ? 'Getting Pool Info...' : 'Get Info'}
-          </button>
-        </div>
+
+        {loading && (
+          <div className="text-center mt-16">
+            <div className="lds-ripple">
+              <div></div>
+              <div></div>
+            </div>
+          </div>
+        )}
 
         {content.name && (
           <div className="mt-6 text-center">

@@ -227,7 +227,7 @@ const Ethereum = () => {
         </div>
 
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-          Click Pool Token
+          Select Pool Token
         </label>
         <div className="flex flex-wrap text-center">
           {ethPools.slice(0, -1).map((pool) => (
@@ -235,7 +235,7 @@ const Ethereum = () => {
               className="flex-auto text-center"
               onClick={() => onGetPair(pool.address)}
             >
-              <div className="w-14 bg-gray-500 p-3 rounded-lg cursor-pointer hover:bg-gray-400">
+              <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
                 <img src={pool.logo} alt={pool.symbol} className="w-8" />
               </div>
             </div>
@@ -244,7 +244,7 @@ const Ethereum = () => {
             className="flex text-center"
             onClick={() => onGetPair(ethPools.slice(-1)[0].address)}
           >
-            <div className="w-14 bg-gray-500 p-3 rounded-lg cursor-pointer hover:bg-gray-400">
+            <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
               <img
                 src={ethPools.slice(-1)[0].logo}
                 alt={ethPools.slice(-1)[0].symbol}
