@@ -239,6 +239,7 @@ const Ethereum = () => {
         <div className="flex flex-wrap text-center">
           {ethPools.slice(0, -1).map((pool) => (
             <div
+              key={pool.address}
               className="flex-auto text-center"
               onClick={() => onGetPoolInfo(null, pool.address)}
             >
