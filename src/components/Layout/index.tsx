@@ -48,9 +48,9 @@ const Layout = () => {
           </button>
         </div>
       </div>
-      <main className="flex-grow ">
+      <main className="flex-grow bg-gray-100 dark:bg-gray-800">
         <Tabs className="text-sm">
-          <TabList className="shadow-lg p-4 dark:bg-gray-800 dark:text-gray-100 text-center">
+          <TabList className="shadow-lg p-4 dark:bg-gray-800 dark:text-gray-100 text-center bg-white">
             <Tab>Ethereum</Tab>
             <Tab>Binance Smart Chain</Tab>
           </TabList>

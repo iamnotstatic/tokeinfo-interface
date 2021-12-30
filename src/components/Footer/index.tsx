@@ -2,7 +2,7 @@ import React from 'react';
 
 const Foooter = () => {
   return (
-    <footer className="px-5 py-4 shadow-2xl dark:bg-gray-800 dark:text-white mt-5">
+    <footer className="bg-white px-5 py-4 shadow-2xl dark:bg-gray-800 dark:text-white mt-5">
       <p className="text-center text-xs text-block">
         To report inaccurate results, any bugs, or to request for features, join
         us at{' '}
@@ -10,7 +10,7 @@ const Foooter = () => {
           href="https://t.me/tokeinfo"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 dark:text-gray-400"
+          className="text-blue-400"
         >
           https://t.me/tokeinfo
         </a>
@@ -33,9 +33,7 @@ const Foooter = () => {
             target="_blank"
             rel="noreferrer"
           >
-            <span className="text-blue-400 dark:text-gray-400">
-              iamnotstatic
-            </span>
+            <span className="text-blue-400">iamnotstatic</span>
           </a>
         </div>
         <div>

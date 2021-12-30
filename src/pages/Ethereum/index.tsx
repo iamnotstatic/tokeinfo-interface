@@ -204,7 +204,7 @@ const Ethereum = () => {
     });
   };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded-2xl p-4 dark:bg-gray-800 mt-10">
+    <div className="bg-white mx-auto max-w-lg shadow-2xl rounded-2xl p-4 dark:bg-gray-800 mt-10">
       <form
         className="w-full p-5"
         onSubmit={(e) => onGetPoolInfo(e, ethPools[0].address)}
@@ -242,7 +242,7 @@ const Ethereum = () => {
               className="flex-auto text-center"
               onClick={() => onGetPoolInfo(null, pool.address)}
             >
-              <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
+              <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
                 <img src={pool.logo} alt={pool.symbol} className="w-8" />
               </div>
             </div>
@@ -251,7 +251,7 @@ const Ethereum = () => {
             className="flex text-center"
             onClick={() => onGetPoolInfo(null, ethPools.slice(-1)[0].address)}
           >
-            <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
+            <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
               <img
                 src={ethPools.slice(-1)[0].logo}
                 alt={ethPools.slice(-1)[0].symbol}
@@ -272,7 +272,7 @@ const Ethereum = () => {
 
         {content.name && (
           <div className="mt-6 text-center">
-            <div className="bg-gray-100 border border-gray-400 text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
+            <div className="bg-white text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
               <strong className="font-bold text-left">Token Info</strong>
               <div className="text-left mb-3">
                 <div>
