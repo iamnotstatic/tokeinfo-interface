@@ -50,7 +50,8 @@ const Ethereum = () => {
     setWeb3(web3);
   }, []);
 
-  const onGetPoolInfo = async (pairToken: string) => {
+  const onGetPoolInfo = async (e: any, pairToken: string) => {
+    e.preventDefault();
     setError('');
     setContent({ ...content, name: '' });
     setLoading(true);
@@ -201,7 +202,10 @@ const Ethereum = () => {
   };
   return (
     <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded-2xl p-4 dark:bg-gray-800 mt-10">
-      <form className="w-full p-5" onSubmit={() => onGetPoolInfo(ethPools[0].address)}>
+      <form
+        className="w-full p-5"
+        onSubmit={(e) => onGetPoolInfo(e, ethPools[0].address)}
+      >
         {error && (
           <div
             className="bg-red-100 text-center border border-red-400 text-red-700 px-4 py-3 mb-5 rounded relative"
@@ -233,7 +237,7 @@ const Ethereum = () => {
           {ethPools.slice(0, -1).map((pool) => (
             <div
               className="flex-auto text-center"
-              onClick={() => onGetPoolInfo(pool.address)}
+              onClick={() => onGetPoolInfo(null, pool.address)}
             >
               <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
                 <img src={pool.logo} alt={pool.symbol} className="w-8" />
@@ -242,7 +246,7 @@ const Ethereum = () => {
           ))}
           <div
             className="flex text-center"
-            onClick={() => onGetPoolInfo(ethPools.slice(-1)[0].address)}
+            onClick={() => onGetPoolInfo(null, ethPools.slice(-1)[0].address)}
           >
             <div className="w-14 bg-gray-400 p-3 rounded-lg cursor-pointer hover:bg-gray-300">
               <img
@@ -336,8 +340,8 @@ const Ethereum = () => {
                   </span>
                 </div>
                 <div className="font-bold text-center text-base mt-2">
-                  {content.lockedPercentage.toFixed(1)}% LP is locked in Unicrypt{' '}
-                  <i className="fa fa-lock"></i>
+                  {content.lockedPercentage.toFixed(1)}% LP is locked in
+                  Unicrypt <i className="fa fa-lock"></i>
                 </div>
               </div>
 
