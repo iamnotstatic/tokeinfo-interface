@@ -218,7 +218,7 @@ const Binance = () => {
         </label>
         <div className="">
           <input
-            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
+            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:text-white dark:border-gray-600"
             id="address"
             type="text"
             placeholder="0x..."
@@ -266,7 +266,7 @@ const Binance = () => {
 
         {content.name && (
           <div className="mt-6 text-center">
-            <div className="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
+            <div className="bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
               <strong className="font-bold text-left">Token Info</strong>
               <div className="text-left mb-3">
                 <div>

@@ -1,10 +1,9 @@
 import React from 'react';
-import github from '../../assets/images/github.png';
 
 const Foooter = () => {
   return (
-    <footer className="bg-gray-800 px-5 py-4 shadow-lg dark:bg-gray-800 mt-5">
-      <p className="text-center text-xs text-white">
+    <footer className="px-5 py-4 shadow-2xl dark:bg-gray-800 dark:text-white mt-5">
+      <p className="text-center text-xs text-block">
         To report inaccurate results, any bugs, or to request for features, join
         us at{' '}
         <a
@@ -24,10 +23,10 @@ const Foooter = () => {
             target="_blank"
             rel="noreferrer"
           >
-            <img src={github} alt="github" className="w-8" />
+            <i className="fab fa-github fa-2x"></i>
           </a>
         </div>
-        <div className="text-white">
+        <div className="text-sm">
           Made for the Web3 Community by{' '}
           <a
             href="https://twitter.com/iamnotstatic"
@@ -45,7 +44,7 @@ const Foooter = () => {
             target="_blank"
             rel="noreferrer"
           >
-            <img src={github} alt="github" className="w-8" />
+            <i className="fab fa-github fa-2x"></i>
           </a>
         </div>
       </div>
