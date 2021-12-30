@@ -127,16 +127,25 @@ const Binance = () => {
       const poolReserves = await uniswapPairContract.methods
         .getReserves()
         .call();
+      const poolToken0 = await uniswapPairContract.methods.token0().call();
 
-      const liquidityPoolSupply = poolReserves._reserve1;
+      let liquidityTokenPoolSupply;
+      let liquidityPoolSupply;
+
+      if (web3.utils.toChecksumAddress(poolToken0) === checksummedAddress) {
+        liquidityTokenPoolSupply = poolReserves._reserve0;
+        liquidityPoolSupply = poolReserves._reserve1;
+      } else {
+        liquidityTokenPoolSupply = poolReserves._reserve1;
+        liquidityPoolSupply = poolReserves._reserve0;
+      }
+
       const liquidityPoolDecimals = await poolErc20Contract.methods
         .decimals()
         .call();
       const liquidityPoolSymbol = await poolErc20Contract.methods
         .symbol()
         .call();
-
-      const liquidityTokenPoolSupply = poolReserves._reserve0;
 
       // Uncrypt locks
       const { liquidityLocksData, totalLockedLiquidity } =
