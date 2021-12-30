@@ -276,7 +276,7 @@ const Binance = () => {
 
         {content.name && (
           <div className="mt-6 text-center">
-            <div className="bg-gray-100 dark:bg-gray-800 dark:text-white text-gray-700 px-4 py-3 rounded relative">
+            <div className="bg-white dark:bg-gray-800 dark:text-white text-gray-700 px-4 py-3 rounded relative">
               <strong className="font-bold text-left">Token Info</strong>
               <div className="text-left mb-3">
                 <div>
