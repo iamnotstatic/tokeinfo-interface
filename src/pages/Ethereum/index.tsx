@@ -51,7 +51,10 @@ const Ethereum = () => {
   }, []);
 
   const onGetPoolInfo = async (e: any, pairToken: string) => {
-    e.preventDefault();
+    if (e !== null) {
+      e.preventDefault();
+    }
+
     setError('');
     setContent({ ...content, name: '' });
     setLoading(true);
