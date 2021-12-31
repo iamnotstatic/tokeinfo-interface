@@ -18,7 +18,7 @@ const Pinksale = ({ pinksaleliquidityLocks, onCopy, content }) => {
                 </span>
             </div>
             <div className="font-bold text-center text-base mt-2">
-                {content.pinksaleLockedPercentage.toFixed(1)}%  is locked in
+                {content.pinksaleLockedPercentage.toFixed(1)}% is locked in
                 Pinksale <i className="fa fa-lock"></i>
             </div>
             <div className="flex mt-3 font-italic">

@@ -190,8 +190,6 @@ const Ethereum = () => {
       const lockedPercentage =
         (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
-      console.log(totalSupply / 10 ** decimals);
-
       // PinSale locked liquidity
       const pinksaleLockedPercentage =
         (pinksaleTotalLockedLiquidity / convertedTokenTotalSupply) * 100;

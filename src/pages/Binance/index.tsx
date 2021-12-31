@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import PairContractAbi from '../../abis/tokeinfo.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { bscPools } from '../../constants/bsc';
-import { getUnicryptLiquidityLocks, ILiquidityLock } from '../../utils';
+import {
+  getPinksaleLiquidityLocks,
+  getUnicryptLiquidityLocks,
+  ILiquidityLock,
+} from '../../utils';
 import { toast } from 'react-toastify';
 import CopyToClipboard from 'react-copy-to-clipboard';
-import Moment from 'react-moment';
 import UniswapPairAbi from '../../abis/uniswapPair.json';
+import Unicrypt from '../../components/Locks/Unicrypt';
+import Pinksale from '../../components/Locks/Pinksale';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
-  const [liquidityLocks, setLiquidityLocks] = useState<ILiquidityLock[] | []>(
+  const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<ILiquidityLock[] | []>(
     []
   );
+  const [pinksaleliquidityLocks, setPinksaleLiquidityLocks] = useState<
+    ILiquidityLock[] | []
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [content, setContent] = useState({
@@ -30,6 +39,9 @@ const Binance = () => {
     pairPoolSupply: 0,
     totalLockedLiquidity: 0,
     lockedPercentage: 0,
+    pinksaleTotalLockedLiquidity: 0,
+    pinksaleLockedPercentage: 0,
+    tokenTotalSupply: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -107,6 +119,7 @@ const Binance = () => {
       const name = await erc20Contract.methods.name().call();
       const symbol = await erc20Contract.methods.symbol().call();
       const decimals = await erc20Contract.methods.decimals().call();
+      const totalSupply = await erc20Contract.methods.totalSupply().call();
 
       // Init uniswap pair contract
       const uniswapPairContract = new bscMainnet.eth.Contract(
@@ -154,13 +167,29 @@ const Binance = () => {
           pairPoolDecimals
         );
 
+      // Pinsale locks
+      const { pinksaleLiquidityLocksData, pinksaleTotalLockedLiquidity } =
+        await getPinksaleLiquidityLocks(
+          bscMainnet,
+          tokenAddress,
+          process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
+          decimals
+        );
+
       const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
       const intialTotalLockedLiquidity =
-      uncryptTotalLockedLiquidity / 10 ** pairPoolDecimals;
+        uncryptTotalLockedLiquidity / 10 ** pairPoolDecimals;
 
-      // Percentage of locked liquidity
+      // Convert token total supply from Gwei to Ether
+      const convertedTokenTotalSupply = totalSupply / 10 ** decimals;
+
+      // Unicrypt Percentage of locked liquidity
       const lockedPercentage =
         (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
+
+      // PinSale Percentage of locked liquidity
+      const pinksaleLockedPercentage =
+        (pinksaleTotalLockedLiquidity / convertedTokenTotalSupply) * 100;
 
       setContent({
         name,
@@ -179,9 +208,13 @@ const Binance = () => {
         pairPoolSupply: initialPairPoolSupply,
         totalLockedLiquidity: intialTotalLockedLiquidity,
         lockedPercentage,
+        pinksaleTotalLockedLiquidity: pinksaleTotalLockedLiquidity,
+        pinksaleLockedPercentage,
+        tokenTotalSupply: convertedTokenTotalSupply,
       });
 
-      setLiquidityLocks(uncryptLiquidityLocksData);
+      setUnicryptLiquidityLocks(uncryptLiquidityLocksData);
+      setPinksaleLiquidityLocks(pinksaleLiquidityLocksData);
 
       setError('');
       setLoading(false);
@@ -333,84 +366,28 @@ const Binance = () => {
                     {content.symbol}/{content.pairName}
                   </a>
                 </div>
+                <Tabs className="mt-3 mb-3">
+                  <TabList className="text-center dark:bg-gray-800 dark:text-gray-100">
+                    <Tab>Unicrypt</Tab>
+                    <Tab>Pinksale</Tab>
+                  </TabList>
 
-                <div>
-                  Total LP tokens:{' '}
-                  <span className="text-gray-500">
-                    {content.pairPoolSupply.toLocaleString('en-US')}
-                  </span>
-                </div>
-                <div>
-                  Total locked LP:{' '}
-                  <span className="text-gray-500">
-                    {content.totalLockedLiquidity.toLocaleString('en-US')}
-                  </span>
-                </div>
-                <div className="font-bold text-center text-base mt-2">
-                  {content.lockedPercentage.toFixed(1)}% LP is locked in
-                  Unicrypt <i className="fa fa-lock"></i>
-                </div>
+                  <TabPanel className="mt-5">
+                    <Unicrypt
+                      unicryptLiquidityLocks={unicryptLiquidityLocks}
+                      onCopy={onCopy}
+                      content={content}
+                    />
+                  </TabPanel>
+                  <TabPanel>
+                    <Pinksale
+                      pinksaleliquidityLocks={pinksaleliquidityLocks}
+                      onCopy={onCopy}
+                      content={content}
+                    />
+                  </TabPanel>
+                </Tabs>
               </div>
-
-              <div className="flex mt-3 font-italic">
-                <div> Value </div>
-                <div className="flex-grow"></div>
-                <div> Unlock date </div>
-              </div>
-
-              {liquidityLocks.map((lock) => (
-                <div key={lock.id}>
-                  <div className="border-b-2">
-                    <div className="flex items-center">
-                      <div>
-                        <div className="font-bold"></div>
-                        <div className="text-xs text-gray-500">
-                          {lock.amount.toLocaleString()} univ2
-                        </div>
-                      </div>
-                      <div className="flex-grow" />
-                      <div className="text-right">
-                        <div className="font-bold">
-                          <Moment fromNow>
-                            {new Date(lock.unlockDate * 1000)}
-                          </Moment>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          <Moment format="DD/MM/YYYY h:mm">
-                            {new Date(lock.unlockDate * 1000)}
-                          </Moment>
-                        </div>
-                      </div>
-                      <i
-                        aria-hidden="true"
-                        className={`fa ${
-                          lock.expired ? 'fa-unlock' : 'fa-lock'
-                        } text-lg ${
-                          lock.expired ? 'text-red-500' : 'text-green-500'
-                        } ml-4`}
-                      />
-                    </div>
-                    <div>
-                      <div className="p-2">
-                        <CopyToClipboard
-                          text={lock.owner}
-                          onCopy={() => onCopy()}
-                        >
-                          <div>
-                            Owner:
-                            <span className="cursor-pointer text-gray-500">
-                              {' '}
-                              {lock.owner?.slice(0, 6)} ...{' '}
-                              {lock.owner?.slice(-5)}{' '}
-                              <i className="fa fa-copy"></i>{' '}
-                            </span>
-                          </div>
-                        </CopyToClipboard>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}
