@@ -12,9 +12,6 @@ import UniswapPairAbi from '../../abis/uniswapPair.json';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
-  const [pairToken, setPairToken] = useState(
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
-  );
   const [liquidityLocks, setLiquidityLocks] = useState<ILiquidityLock[] | []>(
     []
   );
@@ -32,6 +29,7 @@ const Binance = () => {
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
     totalLockedLiquidity: 0,
+    lockedPercentage: 0,
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
@@ -49,8 +47,12 @@ const Binance = () => {
     setWeb3(web3);
   }, []);
 
-  const onGetPair = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onGetPoolInfo = async (e: any, pairToken: string) => {
+    if (e !== null) {
+      e.preventDefault();
+    }
+    setError('');
+    setContent({ ...content, name: '' });
     setLoading(true);
 
     try {
@@ -81,7 +83,7 @@ const Binance = () => {
 
       if (isContract === '0x') {
         setContent({ ...content, name: '' });
-        setError('No liquidity found for this token');
+        setError('No liquidity found for this pool token');
         setLoading(false);
         return;
       }
@@ -125,16 +127,25 @@ const Binance = () => {
       const poolReserves = await uniswapPairContract.methods
         .getReserves()
         .call();
+      const poolToken0 = await uniswapPairContract.methods.token0().call();
 
-      const liquidityPoolSupply = poolReserves._reserve1;
+      let liquidityTokenPoolSupply;
+      let liquidityPoolSupply;
+
+      if (web3.utils.toChecksumAddress(poolToken0) === checksummedAddress) {
+        liquidityTokenPoolSupply = poolReserves._reserve0;
+        liquidityPoolSupply = poolReserves._reserve1;
+      } else {
+        liquidityTokenPoolSupply = poolReserves._reserve1;
+        liquidityPoolSupply = poolReserves._reserve0;
+      }
+
       const liquidityPoolDecimals = await poolErc20Contract.methods
         .decimals()
         .call();
       const liquidityPoolSymbol = await poolErc20Contract.methods
         .symbol()
         .call();
-
-      const liquidityTokenPoolSupply = poolReserves._reserve0;
 
       // Uncrypt locks
       const { liquidityLocksData, totalLockedLiquidity } =
@@ -146,6 +157,14 @@ const Binance = () => {
           process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
+
+      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+      const intialTotalLockedLiquidity =
+        totalLockedLiquidity / 10 ** pairPoolDecimals;
+
+      // Percentage of locked liquidity
+      const lockedPercentage =
+        (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
       setContent({
         name,
@@ -161,8 +180,9 @@ const Binance = () => {
           data[`${coingeckoId}`].usd,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
-        pairPoolSupply: pairPoolSupply / 10 ** pairPoolDecimals,
-        totalLockedLiquidity: totalLockedLiquidity / 10 ** pairPoolDecimals,
+        pairPoolSupply: initialPairPoolSupply,
+        totalLockedLiquidity: intialTotalLockedLiquidity,
+        lockedPercentage,
       });
 
       setLiquidityLocks(liquidityLocksData);
@@ -190,8 +210,11 @@ const Binance = () => {
     });
   };
   return (
-    <div className="bg-gray-100 mx-auto max-w-lg shadow-lg rounded p-4 dark:bg-gray-800 mt-5">
-      <form className="w-full p-5" onSubmit={onGetPair}>
+    <div className="bg-white mx-auto max-w-lg shadow-xl rounded-2xl p-4 dark:bg-gray-800 mt-5">
+      <form
+        className="w-full p-5"
+        onSubmit={(e) => onGetPoolInfo(e, bscPools[0].address)}
+      >
         {error && (
           <div
             className="bg-red-100 text-center border border-red-400 text-red-700 px-4 py-3 mb-5 rounded relative"
@@ -207,7 +230,7 @@ const Binance = () => {
         </label>
         <div className="">
           <input
-            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
+            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:text-white dark:border-gray-600"
             id="address"
             type="text"
             placeholder="0x..."
@@ -219,31 +242,44 @@ const Binance = () => {
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
           Select Pool Token
         </label>
-        <div className="">
-          <select
-            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline"
-            onChange={(e) => setPairToken(e.target.value)}
+        <div className="flex flex-wrap text-center">
+          {bscPools.slice(0, -1).map((pool) => (
+            <div
+              key={pool.address}
+              className="flex-auto text-center"
+              onClick={() => onGetPoolInfo(null, pool.address)}
+            >
+              <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
+                <img src={pool.logo} alt={pool.symbol} className="w-8" />
+              </div>
+            </div>
+          ))}
+          <div
+            className="flex text-center"
+            onClick={() => onGetPoolInfo(null, bscPools.slice(-1)[0].address)}
           >
-            {bscPools.map((pool) => (
-              <option key={pool.symbol} value={pool.address}>
-                {pool.symbol}
-              </option>
-            ))}
-          </select>
+            <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
+              <img
+                src={bscPools.slice(-1)[0].logo}
+                alt={bscPools.slice(-1)[0].symbol}
+                className="w-8"
+              />
+            </div>
+          </div>
         </div>
-        <div className="mt-6">
-          <button
-            className={`bg-gray-800 w-full py-4 px-8 rounded-lg text-gray-50 ${
-              loading === true ? 'disabled:opacity-50 cursor-not-allowed' : null
-            }`}
-          >
-            {loading ? 'Getting Pool Info...' : 'Get Info'}
-          </button>
-        </div>
+
+        {loading && (
+          <div className="text-center mt-16">
+            <div className="lds-ripple">
+              <div></div>
+              <div></div>
+            </div>
+          </div>
+        )}
 
         {content.name && (
           <div className="mt-6 text-center">
-            <div className="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded relative">
+            <div className="bg-white dark:bg-gray-800 dark:text-white text-gray-700 px-4 py-3 rounded relative">
               <strong className="font-bold text-left">Token Info</strong>
               <div className="text-left mb-3">
                 <div>
@@ -314,13 +350,12 @@ const Binance = () => {
                     {content.totalLockedLiquidity.toLocaleString('en-US')}
                   </span>
                 </div>
+                <div className="font-bold text-center text-base mt-2">
+                  {content.lockedPercentage.toFixed(1)}% LP is locked in
+                  Unicrypt <i className="fa fa-lock"></i>
+                </div>
               </div>
 
-              <h3>
-                <strong className="font-bold text-left mt-4">
-                  Liquidity Locks (Unicrypt)
-                </strong>
-              </h3>
               <div className="flex mt-3 font-italic">
                 <div> Value </div>
                 <div className="flex-grow"></div>
