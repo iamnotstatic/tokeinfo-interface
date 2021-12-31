@@ -4,7 +4,7 @@ import PairContractAbi from '../../abis/tokeinfo.json';
 import Erc20Abi from '../../abis/erc20.json';
 import axios, { AxiosResponse } from 'axios';
 import { bscPools } from '../../constants/bsc';
-import { getLiquidityLocks, ILiquidityLock } from '../../utils';
+import { getUnicryptLiquidityLocks, ILiquidityLock } from '../../utils';
 import { toast } from 'react-toastify';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import Moment from 'react-moment';
@@ -59,9 +59,7 @@ const Binance = () => {
       const tokenAddress = await web3.utils.toChecksumAddress(address);
 
       const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
-      const addressIsContract = await bscMainnet.eth.getCode(
-        tokenAddress
-      );
+      const addressIsContract = await bscMainnet.eth.getCode(tokenAddress);
 
       if (addressIsContract === '0x') {
         setContent({ ...content, name: '' });
@@ -132,7 +130,7 @@ const Binance = () => {
       let liquidityTokenPoolSupply;
       let liquidityPoolSupply;
 
-      if (web3.utils.toChecksumAddress(poolToken0) === checksummedAddress) {
+      if (web3.utils.toChecksumAddress(poolToken0) === tokenAddress) {
         liquidityTokenPoolSupply = poolReserves._reserve0;
         liquidityPoolSupply = poolReserves._reserve1;
       } else {
@@ -148,19 +146,17 @@ const Binance = () => {
         .call();
 
       // Uncrypt locks
-      const { liquidityLocksData, totalLockedLiquidity } =
-        await getLiquidityLocks(
+      const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
+        await getUnicryptLiquidityLocks(
           bscMainnet,
           pairAddress,
-          tokenAddress,
           process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
-          process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
 
       const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
       const intialTotalLockedLiquidity =
-        totalLockedLiquidity / 10 ** pairPoolDecimals;
+      uncryptTotalLockedLiquidity / 10 ** pairPoolDecimals;
 
       // Percentage of locked liquidity
       const lockedPercentage =
@@ -185,7 +181,7 @@ const Binance = () => {
         lockedPercentage,
       });
 
-      setLiquidityLocks(liquidityLocksData);
+      setLiquidityLocks(uncryptLiquidityLocksData);
 
       setError('');
       setLoading(false);
