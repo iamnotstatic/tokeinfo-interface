@@ -18,9 +18,9 @@ import Pinksale from '../../components/Locks/Pinksale';
 
 const Binance = () => {
   const [address, setAddress] = useState('0x...');
-  const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<ILiquidityLock[] | []>(
-    []
-  );
+  const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<
+    ILiquidityLock[] | []
+  >([]);
   const [pinksaleliquidityLocks, setPinksaleLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
@@ -75,7 +75,7 @@ const Binance = () => {
 
       if (addressIsContract === '0x') {
         setContent({ ...content, name: '' });
-        setError('Address is not a contract');
+        setError('Address is not a contract, or invalid network');
         setLoading(false);
         return;
       }
@@ -251,7 +251,7 @@ const Binance = () => {
           >
             <strong className="font-bold">Error!</strong>
             <br />
-            <span className="block sm:inline">{error}</span>
+            <span className="block text-xs sm:inline">{error}</span>
           </div>
         )}
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50">
@@ -368,24 +368,76 @@ const Binance = () => {
                 </div>
                 <Tabs className="mt-3 mb-3">
                   <TabList className="text-center dark:bg-gray-800 dark:text-gray-100">
-                    <Tab>Unicrypt</Tab>
-                    <Tab>Pinksale</Tab>
+                    {unicryptLiquidityLocks.length > 0 ? (
+                      <>
+                        <Tab>Unicrypt</Tab>
+                        <Tab>Pinksale</Tab>
+                      </>
+                    ) : pinksaleliquidityLocks.length > 0 ? (
+                      <>
+                        <Tab>Pinksale</Tab>
+                        <Tab>Unicrypt</Tab>
+                      </>
+                    ) : (
+                      <>
+                        <Tab>Unicrypt</Tab>
+                        <Tab>Pinksale</Tab>
+                      </>
+                    )}
                   </TabList>
 
-                  <TabPanel className="mt-5">
-                    <Unicrypt
-                      unicryptLiquidityLocks={unicryptLiquidityLocks}
-                      onCopy={onCopy}
-                      content={content}
-                    />
-                  </TabPanel>
-                  <TabPanel>
-                    <Pinksale
-                      pinksaleliquidityLocks={pinksaleliquidityLocks}
-                      onCopy={onCopy}
-                      content={content}
-                    />
-                  </TabPanel>
+                  {unicryptLiquidityLocks.length > 0 ? (
+                    <>
+                      <TabPanel className="mt-5">
+                        <Unicrypt
+                          unicryptLiquidityLocks={unicryptLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <Pinksale
+                          pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                    </>
+                  ) : pinksaleliquidityLocks.length > 0 ? (
+                    <>
+                      <TabPanel className="mt-5">
+                        <Pinksale
+                          pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <Unicrypt
+                          unicryptLiquidityLocks={unicryptLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                    </>
+                  ) : (
+                    <>
+                      <TabPanel className="mt-5">
+                        <Unicrypt
+                          unicryptLiquidityLocks={unicryptLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <Pinksale
+                          pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                    </>
+                  )}
                 </Tabs>
               </div>
             </div>
