@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import PairContractAbi from '../../abis/tokeinfo.json';
-import Erc20Abi from '../../abis/erc20.json';
-import axios, { AxiosResponse } from 'axios';
+import GoldmineAbi from '../../abis/goldmine.json';
 import { bscPools } from '../../constants/bsc';
 import {
   getPinksaleLiquidityLocks,
@@ -12,7 +10,6 @@ import {
 } from '../../utils';
 import { toast } from 'react-toastify';
 import CopyToClipboard from 'react-copy-to-clipboard';
-import UniswapPairAbi from '../../abis/uniswapPair.json';
 import Unicrypt from '../../components/Locks/Unicrypt';
 import Pinksale from '../../components/Locks/Pinksale';
 
@@ -34,7 +31,6 @@ const Binance = () => {
     pairName: '',
     liquidityPoolSupply: 0,
     liquidityPoolSymbol: '',
-    liquidityPoolSupplyUSD: 0,
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
     totalLockedLiquidity: 0,
@@ -42,20 +38,21 @@ const Binance = () => {
     pinksaleTotalLockedLiquidity: 0,
     pinksaleLockedPercentage: 0,
     tokenTotalSupply: 0,
+    owner: '',
   });
 
   const [web3, setWeb3] = useState<any | null>(null);
-  const [pairContract, setPairContract] = useState<any | null>(null);
+  const [goldmineContract, setGoldmineContract] = useState<any | null>(null);
 
   useEffect(() => {
-    const web3 = new Web3(process.env.REACT_APP_INFURA_URL as string);
+    const web3 = new Web3(process.env.REACT_APP_BSC_MAINNET_URL as string);
 
-    const pairContract = new web3.eth.Contract(
-      PairContractAbi as any,
+    const goldmineContract = new web3.eth.Contract(
+      GoldmineAbi as any,
       process.env.REACT_APP_CONTRACT_ADDRESS as string
     );
 
-    setPairContract(pairContract);
+    setGoldmineContract(goldmineContract);
     setWeb3(web3);
   }, []);
 
@@ -70,8 +67,7 @@ const Binance = () => {
     try {
       const tokenAddress = await web3.utils.toChecksumAddress(address);
 
-      const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
-      const addressIsContract = await bscMainnet.eth.getCode(tokenAddress);
+      const addressIsContract = await web3.eth.getCode(tokenAddress);
 
       if (addressIsContract === '0x') {
         setContent({ ...content, name: '' });
@@ -80,16 +76,11 @@ const Binance = () => {
         return;
       }
 
-      const pairAddress = await pairContract.methods
-        .getPair(
-          pairToken,
-          tokenAddress,
-          process.env.REACT_APP_PANCAKE_SWAP_FACTORY_ADDRESS,
-          process.env.REACT_APP_PANCAKE_SWAP_HASH
-        )
+      const pairAddress = await goldmineContract.methods
+        .getPair(pairToken, tokenAddress)
         .call();
 
-      const isContract = await bscMainnet.eth.getCode(pairAddress);
+      const isContract = await web3.eth.getCode(pairAddress);
 
       if (isContract === '0x') {
         setContent({ ...content, name: '' });
@@ -98,70 +89,46 @@ const Binance = () => {
         return;
       }
 
-      const erc20Contract = new bscMainnet.eth.Contract(
-        Erc20Abi as any,
-        tokenAddress
-      );
+      const tokenDetails = await goldmineContract.methods
+        .getTokenInfo(tokenAddress)
+        .call();
 
-      const poolErc20Contract = new bscMainnet.eth.Contract(
-        Erc20Abi as any,
-        pairToken
-      );
-
-      const coingeckoId = bscPools.find(
-        (pool) => pool.address === pairToken
-      )?.coingeckoId;
-
-      const { data }: AxiosResponse = await axios.get(
-        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
-      );
-
-      const name = await erc20Contract.methods.name().call();
-      const symbol = await erc20Contract.methods.symbol().call();
-      const decimals = await erc20Contract.methods.decimals().call();
-      const totalSupply = await erc20Contract.methods.totalSupply().call();
+      const name = tokenDetails[0];
+      const symbol = tokenDetails[1];
+      const decimals = tokenDetails[2];
+      const owner = tokenDetails[3];
+      const totalSupply = tokenDetails[4];
 
       // Init uniswap pair contract
-      const uniswapPairContract = new bscMainnet.eth.Contract(
-        UniswapPairAbi as any,
-        pairAddress
-      );
+      const poolDetails = await goldmineContract.methods
+        .getPoolInfo(pairAddress)
+        .call();
 
       // Get liquidity pool supply
-      const pairPoolSupply = await uniswapPairContract.methods
-        .totalSupply()
-        .call();
-      const pairPoolDecimals = await uniswapPairContract.methods
-        .decimals()
-        .call();
-
-      const poolReserves = await uniswapPairContract.methods
-        .getReserves()
-        .call();
-      const poolToken0 = await uniswapPairContract.methods.token0().call();
+      const pairPoolSupply = poolDetails[4];
+      const pairPoolDecimals = poolDetails[5];
+      const poolToken0 = poolDetails[0];
 
       let liquidityTokenPoolSupply;
       let liquidityPoolSupply;
 
       if (web3.utils.toChecksumAddress(poolToken0) === tokenAddress) {
-        liquidityTokenPoolSupply = poolReserves._reserve0;
-        liquidityPoolSupply = poolReserves._reserve1;
+        liquidityTokenPoolSupply = poolDetails[2];
+        liquidityPoolSupply = poolDetails[3];
       } else {
-        liquidityTokenPoolSupply = poolReserves._reserve1;
-        liquidityPoolSupply = poolReserves._reserve0;
+        liquidityTokenPoolSupply = poolDetails[3];
+        liquidityPoolSupply = poolDetails[2];
       }
 
-      const liquidityPoolDecimals = await poolErc20Contract.methods
-        .decimals()
-        .call();
-      const liquidityPoolSymbol = await poolErc20Contract.methods
-        .symbol()
-        .call();
+      const liquidityPoolDecimals = poolDetails[5];
+      const liquidityPoolSymbol = bscPools.find(
+        (pool) => pool.address === pairToken
+      )?.symbol as string;
 
       // Uncrypt locks
       const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
         await getUnicryptLiquidityLocks(
-          bscMainnet,
+          web3,
           pairAddress,
           process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
@@ -170,7 +137,7 @@ const Binance = () => {
       // Pinsale locks
       const { pinksaleLiquidityLocksData, pinksaleTotalLockedLiquidity } =
         await getPinksaleLiquidityLocks(
-          bscMainnet,
+          web3,
           tokenAddress,
           process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           decimals
@@ -200,9 +167,6 @@ const Binance = () => {
         liquidityPoolSupply:
           parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals,
         liquidityPoolSymbol,
-        liquidityPoolSupplyUSD:
-          (parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals) *
-          data[`${coingeckoId}`].usd,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
         pairPoolSupply: initialPairPoolSupply,
@@ -211,6 +175,7 @@ const Binance = () => {
         pinksaleTotalLockedLiquidity: pinksaleTotalLockedLiquidity,
         pinksaleLockedPercentage,
         tokenTotalSupply: convertedTokenTotalSupply,
+        owner,
       });
 
       setUnicryptLiquidityLocks(uncryptLiquidityLocksData);
@@ -322,6 +287,21 @@ const Binance = () => {
                   Decimals:{' '}
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
+                {content.owner && (
+                  <div>
+                    Owner:{' '}
+                    <CopyToClipboard
+                      text={content.owner}
+                      onCopy={() => onCopy()}
+                    >
+                      <span className="text-gray-500 cursor-pointer">
+                        {content.owner?.slice(0, 6)} ...{' '}
+                        {content.owner?.slice(-5)}{' '}
+                        <i className="fa fa-copy"></i>
+                      </span>
+                    </CopyToClipboard>
+                  </div>
+                )}
                 <div className="cursor-pointer">
                   Pancakeswap V2 pair:{' '}
                   <CopyToClipboard
@@ -339,14 +319,6 @@ const Binance = () => {
                   Pooled {content.liquidityPoolSymbol}:{' '}
                   <span className="text-gray-500">
                     {content.liquidityPoolSupply.toLocaleString('en-US')}{' '}
-                  </span>
-                  <span className="font-bold">
-                    (
-                    {content.liquidityPoolSupplyUSD.toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                    })}
-                    )
                   </span>
                 </div>
                 <div>
