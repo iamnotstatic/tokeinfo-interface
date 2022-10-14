@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import Web3 from 'web3';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import GoldmineAbi from '../../abis/goldmine.json';
-import { ethPools } from '../../constants/eth';
 import {
   getUnicryptLiquidityLocks,
   ILiquidityLock,
@@ -12,15 +11,17 @@ import {
 } from '../../utils';
 import Unicrypt from '../../components/Locks/Unicrypt';
 import Pinksale from '../../components/Locks/Pinksale';
+import { getTokenPairs } from '../../constants/eth';
 
 const Ethereum = () => {
-  const [address, setAddress] = useState('0x...');
+  const [tokenAddress, setAddress] = useState('0x...');
   const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
   const [pinksaleliquidityLocks, setPinksaleLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
+  const [tokenPairs, setTokenPairs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [content, setContent] = useState({
@@ -41,22 +42,24 @@ const Ethereum = () => {
     owner: '',
   });
 
-  const [web3, setWeb3] = useState<any | null>(null);
-  const [goldmineContract, setGoldmineContract] = useState<any | null>(null);
-
   useEffect(() => {
-    const web3 = new Web3(process.env.REACT_APP_ETH_MAINNET_URL as string);
+    const urlParams = new URLSearchParams(window.location.search);
+    const address = urlParams.get('address');
 
-    const goldmineContract = new web3.eth.Contract(
-      GoldmineAbi as any,
-      process.env.REACT_APP_ETH_CONTRACT_ADDRESS as string
-    );
+    if (address) {
+      setAddress(address);
+      onSetAddress(null, address);
+    }
 
-    setGoldmineContract(goldmineContract);
-    setWeb3(web3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onGetPoolInfo = async (e: any, pairToken: string) => {
+  const onGetPoolInfo = async (
+    e: any,
+    tokenAddress: string,
+    poolAddress: string,
+    pairAddress: string
+  ) => {
     if (e !== null) {
       e.preventDefault();
     }
@@ -66,19 +69,12 @@ const Ethereum = () => {
     setLoading(true);
 
     try {
-      const tokenAddress = await web3.utils.toChecksumAddress(address);
-      const addressIsContract = await web3.eth.getCode(tokenAddress);
+      const web3 = new Web3(process.env.REACT_APP_ETH_MAINNET_URL as string);
 
-      if (addressIsContract === '0x') {
-        setContent({ ...content, name: '' });
-        setError('Address is not a contract, or invalid network');
-        setLoading(false);
-        return;
-      }
-
-      const pairAddress = await goldmineContract.methods
-        .getPair(pairToken, tokenAddress)
-        .call();
+      const goldmineContract = new web3.eth.Contract(
+        GoldmineAbi as any,
+        process.env.REACT_APP_ETH_CONTRACT_ADDRESS as string
+      );
 
       const isContract = await web3.eth.getCode(pairAddress);
 
@@ -121,9 +117,9 @@ const Ethereum = () => {
       }
 
       const liquidityPoolDecimals = poolDetails[5];
-      const liquidityPoolSymbol = ethPools.find(
-        (pool) => pool.address === pairToken
-      )?.symbol as string;
+      const liquidityPoolSymbol = tokenPairs.find(
+        (pair) => pair.poolAddress === poolAddress
+      )?.poolSymbol as string;
 
       // Uncrypt locks
       const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
@@ -192,6 +188,72 @@ const Ethereum = () => {
     }
   };
 
+  const onSetAddress = async (e: any, address: string) => {
+    if (e !== null) {
+      e.preventDefault();
+    }
+
+    setLoading(true);
+    setError('');
+    setContent({ ...content, name: '' });
+    setTokenPairs([]);
+
+    try {
+      const web3 = new Web3(process.env.REACT_APP_ETH_MAINNET_URL as string);
+      const goldmineContract = new web3.eth.Contract(
+        GoldmineAbi as any,
+        process.env.REACT_APP_ETH_CONTRACT_ADDRESS as string
+      );
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramAddress = urlParams.get('address');
+
+      if (paramAddress) {
+        urlParams.set('address', address);
+        window.history.replaceState(
+          {},
+          '',
+          `${window.location.pathname}?${urlParams.toString()}`
+        );
+      }
+
+      if (!web3.utils.isAddress(address)) {
+        console.log('invalid address', address);
+        setContent({ ...content, name: '' });
+        setError('Invalid address provided');
+        setLoading(false);
+        return;
+      }
+
+      const tokenAddress = web3.utils.toChecksumAddress(address);
+      const addressIsContract = await web3.eth.getCode(tokenAddress);
+
+      if (addressIsContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('Address is not a contract, or invalid network');
+        setLoading(false);
+        return;
+      }
+
+      // get token pairs
+      const pairs = await getTokenPairs(tokenAddress, web3, goldmineContract);
+      setTokenPairs(pairs);
+      setAddress(tokenAddress);
+      onGetPoolInfo(
+        null,
+        tokenAddress,
+        pairs[0].poolAddress,
+        pairs[0].pairAddress
+      );
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setContent({ ...content, name: '' });
+      setLoading(false);
+      setError('Something went wrong, Please check address and try again');
+    }
+  };
+
   const onCopy = () => {
     toast.success('Address copied to clipboard', {
       position: 'top-right',
@@ -208,7 +270,7 @@ const Ethereum = () => {
     <div className="bg-white mx-auto max-w-lg shadow-2xl rounded-2xl p-4 dark:bg-gray-800 mt-10">
       <form
         className="w-full p-5"
-        onSubmit={(e) => onGetPoolInfo(e, ethPools[0].address)}
+        onSubmit={(e) => onSetAddress(e, tokenAddress)}
       >
         {error && (
           <div
@@ -228,40 +290,45 @@ const Ethereum = () => {
             className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline  dark:bg-gray-800 dark:text-white dark:border-gray-600"
             id="address"
             type="text"
+            required={true}
             placeholder="0x..."
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={(e) => onSetAddress(null, e.target.value)}
             autoComplete="off"
           />
         </div>
 
-        <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-          Select Pool Token
-        </label>
-        <div className="flex flex-wrap text-center">
-          {ethPools.slice(0, -1).map((pool) => (
+        {tokenPairs.length > 0 && (
+          <>
+            <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
+              Select Pairs
+            </label>
             <div
-              key={pool.address}
-              className="flex-auto text-center"
-              onClick={() => onGetPoolInfo(null, pool.address)}
+              className={`flex text-center max-w-full gap-2 overflow-scroll ${
+                tokenPairs?.length < 5 && 'justify-center'
+              }`}
             >
-              <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
-                <img src={pool.logo} alt={pool.symbol} className="w-8" />
-              </div>
+              {tokenPairs.map((pair) => (
+                <div
+                  key={pair.poolAddress}
+                  className="text-center"
+                  onClick={() =>
+                    onGetPoolInfo(
+                      null,
+                      pair.tokenAddress,
+                      pair.poolAddress,
+                      pair.pairAddress
+                    )
+                  }
+                >
+                  <div className="w-20 bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center">
+                    <img src={pair.logo} alt="pool" className="w-8 mx-auto" />
+                    <p className="text-xs mt-2 font-bold">{pair.poolSymbol}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          <div
-            className="flex text-center"
-            onClick={() => onGetPoolInfo(null, ethPools.slice(-1)[0].address)}
-          >
-            <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
-              <img
-                src={ethPools.slice(-1)[0].logo}
-                alt={ethPools.slice(-1)[0].symbol}
-                className="w-8"
-              />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {loading && (
           <div className="text-center mt-16">
@@ -271,11 +338,9 @@ const Ethereum = () => {
             </div>
           </div>
         )}
-
         {content.name && (
           <div className="mt-6 text-center">
             <div className="bg-white text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
-              <strong className="font-bold text-left">Token Info</strong>
               <div className="text-left mb-3">
                 <div>
                   Name: <span className="text-gray-500">{content.name}</span>
@@ -303,6 +368,15 @@ const Ethereum = () => {
                     </CopyToClipboard>
                   </div>
                 )}
+                <div className="cursor-pointer">
+                  Token:{' '}
+                  <CopyToClipboard text={tokenAddress} onCopy={() => onCopy()}>
+                    <span className="text-gray-500">
+                      {tokenAddress?.slice(0, 6)} ... {tokenAddress?.slice(-5)}{' '}
+                      <i className="fa fa-copy"></i>
+                    </span>
+                  </CopyToClipboard>
+                </div>
                 <div className="cursor-pointer">
                   Uniswap V2 pair:{' '}
                   <CopyToClipboard
