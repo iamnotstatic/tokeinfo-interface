@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import GoldmineAbi from '../../abis/goldmine.json';
-import { bscPools } from '../../constants/bsc';
+import { bscPools, getTokenPools } from '../../constants/bsc';
 import {
   getPinksaleLiquidityLocks,
   getUnicryptLiquidityLocks,
@@ -158,6 +158,11 @@ const Binance = () => {
       const pinksaleLockedPercentage =
         (pinksaleTotalLockedLiquidity / convertedTokenTotalSupply) * 100;
 
+      // get pools
+      const pools = await getTokenPools(tokenAddress, web3);
+
+      console.log(pools, 'pools');
+
       setContent({
         name,
         symbol,
@@ -236,7 +241,7 @@ const Binance = () => {
         <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
           Select Pool Token
         </label>
-        <div className="flex flex-wrap text-center">
+        <div className="flex text-center max-w-md gap-3 overflow-scroll justify-between">
           {bscPools.slice(0, -1).map((pool) => (
             <div
               key={pool.address}
