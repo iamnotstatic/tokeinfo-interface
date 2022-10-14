@@ -1,3 +1,23 @@
+import uniswapV2FactoryABI from '../abis/uniswapV2Factory.json';
+
+export const getTokenPools = async (tokenAddress: string, web3: any) => {
+  const uniswapV2Factory = new web3.eth.Contract(
+    uniswapV2FactoryABI,
+    process.env.REACT_APP_UNISWAP_BSC_FACTORY_ADDRESS
+  );
+
+  // Get all pairs events
+  const pools = await uniswapV2Factory.getPastEvents('PairCreated', {
+    filter: { token1: tokenAddress },
+    fromBlock: 19675439,
+    toBlock: 'latest',
+  });
+
+  console.log(pools);
+
+  return pools;
+};
+
 export const bscPools = [
   {
     address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
