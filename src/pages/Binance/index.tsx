@@ -49,7 +49,7 @@ const Binance = () => {
 
     const goldmineContract = new web3.eth.Contract(
       GoldmineAbi as any,
-      process.env.REACT_APP_CONTRACT_ADDRESS as string
+      process.env.REACT_APP_BSC_CONTRACT_ADDRESS as string
     );
 
     setGoldmineContract(goldmineContract);
@@ -330,7 +330,7 @@ const Binance = () => {
                 <div>
                   Pool:{' '}
                   <a
-                    href={`${process.env.REACT_APP_BSC_SCAN_URL}address/${content.pairAddress}`}
+                    href={`${process.env.REACT_APP_BSCSCAN_URL}address/${content.pairAddress}`}
                     className="text-blue-500"
                     target="_blank"
                     rel="noopener noreferrer"
