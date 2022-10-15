@@ -12,8 +12,10 @@ import {
 import Unicrypt from '../../components/Locks/Unicrypt';
 import Pinksale from '../../components/Locks/Pinksale';
 import { getTokenPairs } from '../../constants/eth';
+import { IContent } from '../../utils/index.interface';
 
 const Ethereum = () => {
+  const [isActiveIndex, setIsActiveIndex] = useState(0);
   const [tokenAddress, setAddress] = useState('0x...');
   const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<
     ILiquidityLock[] | []
@@ -24,22 +26,25 @@ const Ethereum = () => {
   const [tokenPairs, setTokenPairs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [content, setContent] = useState({
+  const [content, setContent] = useState<IContent>({
     name: '',
     symbol: '',
-    decimals: '',
+    decimals: 0,
     pairAddress: '',
-    pairName: '',
-    liquidityPoolSupply: 0,
     liquidityPoolSymbol: '',
+    liquidityPoolSupply: 0,
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
-    totalLockedLiquidity: 0,
-    lockedPercentage: 0,
-    pinksaleTotalLockedLiquidity: 0,
-    pinksaleLockedPercentage: 0,
     tokenTotalSupply: 0,
+    uncryptTotalLockedLiquidity: 0,
+    unicryptLockedPercentage: 0,
+    pinksaleTotalLockedLiquidity: 0,
+    pinksaleLockedTokenPercentage: 0,
+    pinksaleLockedLpTokenPercentage: 0,
+    pinksaleTotalLockedTokens: 0,
+    pinksaleTotalLockedLpTokens: 0,
     owner: '',
+    network: 'eth',
   });
 
   useEffect(() => {
@@ -58,7 +63,8 @@ const Ethereum = () => {
     e: any,
     tokenAddress: string,
     poolAddress: string,
-    pairAddress: string
+    pairAddress: string,
+    poolSymbol: string
   ) => {
     if (e !== null) {
       e.preventDefault();
@@ -101,25 +107,22 @@ const Ethereum = () => {
         .call();
 
       // Get liquidity pool supply
-      const pairPoolSupply = poolDetails[4];
-      const pairPoolDecimals = poolDetails[5];
-      const poolToken0 = poolDetails[0];
+      const pairPoolSupply = poolDetails.poolTotalSupply;
+      const pairPoolDecimals = poolDetails.poolDecimals;
+      const poolToken0 = poolDetails.token0;
 
       let liquidityTokenPoolSupply;
       let liquidityPoolSupply;
 
       if (web3.utils.toChecksumAddress(poolToken0) === tokenAddress) {
-        liquidityTokenPoolSupply = poolDetails[2];
-        liquidityPoolSupply = poolDetails[3];
+        liquidityTokenPoolSupply = poolDetails._reserve0;
+        liquidityPoolSupply = poolDetails._reserve1;
       } else {
-        liquidityTokenPoolSupply = poolDetails[3];
-        liquidityPoolSupply = poolDetails[2];
+        liquidityTokenPoolSupply = poolDetails._reserve1;
+        liquidityPoolSupply = poolDetails._reserve0;
       }
 
-      const liquidityPoolDecimals = poolDetails[5];
-      const liquidityPoolSymbol = tokenPairs.find(
-        (pair) => pair.poolAddress === poolAddress
-      )?.poolSymbol as string;
+      const liquidityPoolDecimals = poolDetails.poolDecimals;
 
       // Uncrypt locks
       const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
@@ -131,28 +134,35 @@ const Ethereum = () => {
         );
 
       // Pinsale locks
-      const { pinksaleLiquidityLocksData, pinksaleTotalLockedLiquidity } =
-        await getPinksaleLiquidityLocks(
-          web3,
-          tokenAddress,
-          process.env.REACT_APP_PINKSALE_ETH_LIQUIDITY_LOCKER_ADDRESS as string,
-          decimals
-        );
-
+      const {
+        pinksaleLiquidityLocksData,
+        pinksaleTotalLockedLiquidity,
+        pinksaleTotalLockedTokens,
+        pinksaleTotalLockedLpTokens,
+      } = await getPinksaleLiquidityLocks(
+        web3,
+        tokenAddress,
+        pairAddress,
+        content.network,
+        decimals,
+        pairPoolDecimals
+      );
       const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
-      const intialTotalLockedLiquidity =
-        uncryptTotalLockedLiquidity / 10 ** pairPoolDecimals;
 
-      // Convert token total supply from Gwei to Ether
-      const convertedTokenTotalSupply = totalSupply / 10 ** decimals;
+      // Uncrypt Percentage of locked liquidity in the pool
+      const unicryptLockedPercentage =
+        (uncryptTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
-      // Percentage of locked liquidity
-      const lockedPercentage =
-        (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
+      console.log('unicryptLockedPercentage', unicryptLockedPercentage);
 
-      // PinSale locked liquidity
-      const pinksaleLockedPercentage =
-        (pinksaleTotalLockedLiquidity / convertedTokenTotalSupply) * 100;
+      const tokenTotalSupply = totalSupply / 10 ** decimals;
+      // Pinksale locked liquidity percentage
+      const pinksaleLockedTokenPercentage =
+        (pinksaleTotalLockedTokens / tokenTotalSupply) * 100;
+
+      // Pinksale locked lp tokens percentage
+      const pinksaleLockedLpTokenPercentage =
+        (pinksaleTotalLockedLpTokens / initialPairPoolSupply) * 100;
 
       // Get Locked Percentage
       setContent({
@@ -160,19 +170,22 @@ const Ethereum = () => {
         symbol,
         decimals,
         pairAddress,
-        pairName: liquidityPoolSymbol,
+        liquidityPoolSymbol: poolSymbol,
         liquidityPoolSupply:
           parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals,
-        liquidityPoolSymbol,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
         pairPoolSupply: initialPairPoolSupply,
-        totalLockedLiquidity: intialTotalLockedLiquidity,
-        lockedPercentage,
-        pinksaleTotalLockedLiquidity: pinksaleTotalLockedLiquidity,
-        pinksaleLockedPercentage,
-        tokenTotalSupply: convertedTokenTotalSupply,
+        tokenTotalSupply,
+        uncryptTotalLockedLiquidity,
+        unicryptLockedPercentage,
+        pinksaleTotalLockedLiquidity,
+        pinksaleLockedTokenPercentage,
+        pinksaleLockedLpTokenPercentage,
+        pinksaleTotalLockedTokens,
+        pinksaleTotalLockedLpTokens,
         owner,
+        network: 'eth',
       });
 
       setUnicryptLiquidityLocks(uncryptLiquidityLocksData);
@@ -181,7 +194,6 @@ const Ethereum = () => {
       setError('');
       setLoading(false);
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
       setError('Something went wrong, Please check address and try again');
@@ -218,7 +230,6 @@ const Ethereum = () => {
       }
 
       if (!web3.utils.isAddress(address)) {
-        console.log('invalid address', address);
         setContent({ ...content, name: '' });
         setError('Invalid address provided');
         setLoading(false);
@@ -239,15 +250,16 @@ const Ethereum = () => {
       const pairs = await getTokenPairs(tokenAddress, web3, goldmineContract);
       setTokenPairs(pairs);
       setAddress(tokenAddress);
+
       onGetPoolInfo(
         null,
         tokenAddress,
         pairs[0].poolAddress,
-        pairs[0].pairAddress
+        pairs[0].pairAddress,
+        pairs[0].poolSymbol
       );
       setLoading(false);
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
       setError('Something went wrong, Please check address and try again');
@@ -307,20 +319,26 @@ const Ethereum = () => {
                 tokenPairs?.length < 5 && 'justify-center'
               }`}
             >
-              {tokenPairs.map((pair) => (
+              {tokenPairs.map((pair, index) => (
                 <div
-                  key={pair.poolAddress}
+                  key={index}
                   className="text-center"
-                  onClick={() =>
+                  onClick={() => {
+                    setIsActiveIndex(index);
                     onGetPoolInfo(
                       null,
                       pair.tokenAddress,
                       pair.poolAddress,
-                      pair.pairAddress
-                    )
-                  }
+                      pair.pairAddress,
+                      pair.poolSymbol
+                    );
+                  }}
                 >
-                  <div className="w-20 bg-gray-100 p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center">
+                  <div
+                    className={`w-20 ${
+                      isActiveIndex === index ? 'bg-gray-100' : 'bg-gray-500'
+                    } p-2 rounded-lg cursor-pointer hover:bg-gray-300 text-center`}
+                  >
                     <img src={pair.logo} alt="pool" className="w-8 mx-auto" />
                     <p className="text-xs mt-2 font-bold">{pair.poolSymbol}</p>
                   </div>
@@ -342,6 +360,24 @@ const Ethereum = () => {
           <div className="mt-6 text-center">
             <div className="bg-white text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
               <div className="text-left mb-3">
+                <div className="cursor-pointer">
+                  Token:{' '}
+                  <CopyToClipboard text={tokenAddress} onCopy={() => onCopy()}>
+                    <span>
+                      <a
+                        href={`${process.env.REACT_APP_ETHERSCAN_URL}address/${tokenAddress}`}
+                        className="text-blue-500"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {tokenAddress?.slice(0, 6)} ...{' '}
+                        {tokenAddress?.slice(-5)}{' '}
+                      </a>
+
+                      <i className="fa fa-copy"></i>
+                    </span>
+                  </CopyToClipboard>
+                </div>
                 <div>
                   Name: <span className="text-gray-500">{content.name}</span>
                 </div>
@@ -352,6 +388,12 @@ const Ethereum = () => {
                 <div>
                   Decimals:{' '}
                   <span className="text-gray-500">{content.decimals}</span>
+                </div>
+                <div>
+                  Total Supply:{' '}
+                  <span className="text-gray-500">
+                    {content.tokenTotalSupply.toLocaleString('en-US')}
+                  </span>
                 </div>
                 {content.owner && (
                   <div>
@@ -368,15 +410,6 @@ const Ethereum = () => {
                     </CopyToClipboard>
                   </div>
                 )}
-                <div className="cursor-pointer">
-                  Token:{' '}
-                  <CopyToClipboard text={tokenAddress} onCopy={() => onCopy()}>
-                    <span className="text-gray-500">
-                      {tokenAddress?.slice(0, 6)} ... {tokenAddress?.slice(-5)}{' '}
-                      <i className="fa fa-copy"></i>
-                    </span>
-                  </CopyToClipboard>
-                </div>
                 <div className="cursor-pointer">
                   Uniswap V2 pair:{' '}
                   <CopyToClipboard
@@ -410,8 +443,14 @@ const Ethereum = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {content.symbol}/{content.pairName}
+                    {content.symbol}/{content.liquidityPoolSymbol}
                   </a>
+                </div>
+                <div>
+                  Total LP tokens:{' '}
+                  <span className="text-gray-500">
+                    {content.pairPoolSupply.toLocaleString('en-US')}
+                  </span>
                 </div>
 
                 <Tabs className="mt-3 mb-3">
