@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import Web3 from 'web3';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import GoldmineAbi from '../../abis/goldmine.json';
+import Erc20Abi from '../../abis/erc20.json';
 import {
   getUnicryptLiquidityLocks,
   ILiquidityLock,
@@ -62,7 +63,6 @@ const Ethereum = () => {
   const onGetPoolInfo = async (
     e: any,
     tokenAddress: string,
-    poolAddress: string,
     pairAddress: string,
     poolSymbol: string
   ) => {
@@ -91,15 +91,22 @@ const Ethereum = () => {
         return;
       }
 
-      const tokenDetails = await goldmineContract.methods
-        .getTokenInfo(tokenAddress)
-        .call();
+      const erc20Contract = new web3.eth.Contract(
+        Erc20Abi as any,
+        tokenAddress
+      );
 
-      const name = tokenDetails[0];
-      const symbol = tokenDetails[1];
-      const decimals = tokenDetails[2];
-      const owner = tokenDetails[3];
-      const totalSupply = tokenDetails[4];
+      let owner: string = '';
+      try {
+        owner = await erc20Contract.methods.owner().call();
+      } catch (error) {
+        owner = '';
+      }
+
+      const name = await erc20Contract.methods.name().call();
+      const symbol = await erc20Contract.methods.symbol().call();
+      const decimals = await erc20Contract.methods.decimals().call();
+      const totalSupply = await erc20Contract.methods.totalSupply().call();
 
       // Init uniswap pair contract
       const poolDetails = await goldmineContract.methods
@@ -212,10 +219,6 @@ const Ethereum = () => {
 
     try {
       const web3 = new Web3(process.env.REACT_APP_ETH_MAINNET_URL as string);
-      const goldmineContract = new web3.eth.Contract(
-        GoldmineAbi as any,
-        process.env.REACT_APP_ETH_CONTRACT_ADDRESS as string
-      );
 
       const urlParams = new URLSearchParams(window.location.search);
       const paramAddress = urlParams.get('address');
@@ -247,14 +250,21 @@ const Ethereum = () => {
       }
 
       // get token pairs
-      const pairs = await getTokenPairs(tokenAddress, web3, goldmineContract);
+      const pairs = await getTokenPairs(tokenAddress, web3);
+
+      if (pairs.length === 0) {
+        setContent({ ...content, name: '' });
+        setError('No liquidity found for this token address');
+        setLoading(false);
+        return;
+      }
+
       setTokenPairs(pairs);
       setAddress(tokenAddress);
 
       onGetPoolInfo(
         null,
         tokenAddress,
-        pairs[0].poolAddress,
         pairs[0].pairAddress,
         pairs[0].poolSymbol
       );
@@ -328,7 +338,6 @@ const Ethereum = () => {
                     onGetPoolInfo(
                       null,
                       pair.tokenAddress,
-                      pair.poolAddress,
                       pair.pairAddress,
                       pair.poolSymbol
                     );
