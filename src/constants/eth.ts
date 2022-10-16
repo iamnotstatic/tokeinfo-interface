@@ -1,10 +1,7 @@
 import uniswapV2FactoryABI from '../abis/uniswapV2Factory.json';
+import Erc20Abi from '../abis/erc20.json';
 
-export const getTokenPairs = async (
-  tokenAddress: string,
-  web3: any,
-  goldmineContract: any
-) => {
+export const getTokenPairs = async (tokenAddress: string, web3: any) => {
   const uniswapV2Factory = new web3.eth.Contract(
     uniswapV2FactoryABI,
     process.env.REACT_APP_UNISWAP_ETH_FACTORY_ADDRESS
@@ -23,15 +20,14 @@ export const getTokenPairs = async (
   if (events.length > 0) {
     for (const event of events) {
       const { token0, token1, pair } = event.returnValues;
-      const tokenDetails = await goldmineContract.methods
-        .getTokenInfo(token1)
-        .call();
+      const erc20Contract = new web3.eth.Contract(Erc20Abi as any, token1);
+      const symbol = await erc20Contract.methods.symbol().call();
 
       pairs.push({
         pairAddress: pair,
         tokenAddress: token0,
         poolAddress: token1,
-        poolSymbol: tokenDetails[1],
+        poolSymbol: symbol,
         logo: getPoolLogo(token1)?.logo,
       });
     }
@@ -46,15 +42,14 @@ export const getTokenPairs = async (
 
     for (const event of events) {
       const { token0, token1, pair } = event.returnValues;
-      const tokenDetails = await goldmineContract.methods
-        .getTokenInfo(token0)
-        .call();
+      const erc20Contract = new web3.eth.Contract(Erc20Abi as any, token0);
+      const symbol = await erc20Contract.methods.symbol().call();
 
       pairs.push({
         pairAddress: pair,
         tokenAddress: token1,
         poolAddress: token0,
-        poolSymbol: tokenDetails[1],
+        poolSymbol: symbol,
         logo: getPoolLogo(token0)?.logo,
       });
     }
