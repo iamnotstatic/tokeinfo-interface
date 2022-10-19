@@ -1,6 +1,7 @@
 import unicryptLockerAbi from '../abis/unicryptV2Locker.json';
 import pinksaleLockerAbi from '../abis/pinksaleLocker.json';
 import pinksaleV2LockerAbi from '../abis/pinksaleV2Locker.json';
+import teamFinanceAbi from '../abis/teamFinanceLocker.json';
 
 export interface ILiquidityLock {
   id: string;
@@ -285,6 +286,84 @@ export const getUnicryptLiquidityLocks = async (
   return { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity };
 };
 
+export const getTeamFinanceLiquidityLocks = async (
+  tokenAddress: string,
+  pairAddress: string,
+  tokenDecimals: number,
+  pairPoolDecimals: number,
+  teamFinanceLockerAddress: string,
+  web3: any
+) => {
+  const teamFinanceLiquidityLocksData = [];
+  let teamFinanceTotalLockedLpTokens = 0;
+  let teamFinanceTotalLockedTokens: number = 0;
+
+  const teamFinanceLocker = new web3.eth.Contract(
+    teamFinanceAbi,
+    teamFinanceLockerAddress
+  );
+  const currentTimestamp = new Date().valueOf() / 1000;
+
+  const tokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
+    filter: { tokenAddress },
+    fromBlock: 0,
+    toBlock: 'latest',
+  });
+
+  const lpTokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
+    filter: { tokenAddress: pairAddress },
+    fromBlock: 0,
+    toBlock: 'latest',
+  });
+
+  for (let i = 0; i < tokenEvents.length; i++) {
+    const event = tokenEvents[i];
+
+    // Increase total locked tokens
+    if (currentTimestamp < parseInt(event.returnValues.unlockTime)) {
+      teamFinanceTotalLockedTokens +=
+        parseInt(event.returnValues.amount, 10) / 10 ** tokenDecimals;
+    }
+
+    teamFinanceLiquidityLocksData.push({
+      id: event.returnValues.id,
+      amount: event.returnValues.amount / 10 ** tokenDecimals,
+      unlockDate: event.returnValues.unlockTime,
+      lockDate: 0,
+      owner: event.returnValues.withdrawalAddress,
+      expired: parseInt(event.returnValues.unlockTime) < currentTimestamp,
+      isTokenLocked: true,
+    });
+  }
+
+  for (let i = 0; i < lpTokenEvents.length; i++) {
+    const event = lpTokenEvents[i];
+
+    // Increase total locked tokens
+    if (currentTimestamp < parseInt(event.returnValues.unlockTime)) {
+      teamFinanceTotalLockedLpTokens +=
+        parseInt(event.returnValues.amount, 10) / 10 ** pairPoolDecimals;
+    }
+
+    teamFinanceLiquidityLocksData.push({
+      id: event.returnValues.id,
+      amount: event.returnValues.amount / 10 ** pairPoolDecimals,
+      unlockDate: event.returnValues.unlockTime,
+      lockDate: 0,
+      owner: event.returnValues.withdrawalAddress,
+      expired: parseInt(event.returnValues.unlockTime) < currentTimestamp,
+      isTokenLocked: false,
+    });
+  }
+
+  return {
+    teamFinanceLiquidityLocksData,
+    teamFinanceTotalLockedTokens,
+    teamFinanceTotalLockedLpTokens,
+    teamFinanceTotalLockedLiquidity:
+      teamFinanceTotalLockedTokens + teamFinanceTotalLockedLpTokens,
+  };
+};
 export const getAmountWithoutRounding = (
   amount: number,
   decimals: number = 1
