@@ -15,6 +15,11 @@ export interface IContent {
   pinksaleLockedLpTokenPercentage: number;
   pinksaleTotalLockedTokens: number;
   pinksaleTotalLockedLpTokens: number;
+  teamFinanceTotalLockedLiquidity: number;
+  teamFinanceLockedTokenPercentage: number;
+  teamFinanceLockedLpTokenPercentage: number;
+  teamFinanceTotalLockedTokens: number;
+  teamFinanceTotalLockedLpTokens: number;
   owner: string;
   network: string;
 }
