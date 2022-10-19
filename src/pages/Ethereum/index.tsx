@@ -160,8 +160,6 @@ const Ethereum = () => {
       const unicryptLockedPercentage =
         (uncryptTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
-      console.log('unicryptLockedPercentage', unicryptLockedPercentage);
-
       const tokenTotalSupply = totalSupply / 10 ** decimals;
       // Pinksale locked liquidity percentage
       const pinksaleLockedTokenPercentage =
@@ -254,7 +252,7 @@ const Ethereum = () => {
 
       if (pairs.length === 0) {
         setContent({ ...content, name: '' });
-        setError('No liquidity found for this token address');
+        setError('No liquidity found for this token');
         setLoading(false);
         return;
       }
@@ -322,7 +320,7 @@ const Ethereum = () => {
         {tokenPairs.length > 0 && (
           <>
             <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-              Select Pairs
+              Select Pair
             </label>
             <div
               className={`flex text-center max-w-full gap-2 overflow-scroll ${
