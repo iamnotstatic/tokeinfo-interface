@@ -155,14 +155,6 @@ const Binance = () => {
         pairPoolDecimals
       );
 
-      console.log(
-        'pinksaleLiquidityLocksData',
-        pinksaleLiquidityLocksData,
-        pinksaleTotalLockedLiquidity,
-        pinksaleTotalLockedTokens,
-        pinksaleTotalLockedLpTokens
-      );
-
       const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
 
       // Uncrypt Percentage of locked liquidity in the pool
@@ -261,7 +253,7 @@ const Binance = () => {
 
       if (pairs.length === 0) {
         setContent({ ...content, name: '' });
-        setError('No liquidity found for this token address');
+        setError('No liquidity found for this token');
         setLoading(false);
         return;
       }
@@ -329,7 +321,7 @@ const Binance = () => {
         {tokenPairs.length > 0 && (
           <>
             <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-              Select Pairs
+              Select Pair
             </label>
             <div
               className={`flex text-center max-w-full gap-2 overflow-scroll ${
