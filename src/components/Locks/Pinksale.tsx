@@ -49,7 +49,7 @@ const Pinksale = ({
         </>
       )}
 
-      {content.pinksaleTotalLockedLpTokens > 0 ? (
+      {content.pinksaleTotalLockedLiquidity > 0 ? (
         <div className="font-bold text-center text-sm mt-2">
           {getAmountWithoutRounding(content.pinksaleLockedLpTokenPercentage)}%
           Lp tokens and{' '}
