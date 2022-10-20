@@ -3,6 +3,9 @@ import pinksaleLockerAbi from '../abis/pinksaleLocker.json';
 import pinksaleV2LockerAbi from '../abis/pinksaleV2Locker.json';
 import teamFinanceAbi from '../abis/teamFinanceLocker.json';
 
+import teamfinanceV1EthLocks from '../data/teamfinance-v1-eth-locks.json';
+import teamFinanceV1BscLocks from '../data/teamfinance-v1-bsc-locks.json';
+
 export interface ILiquidityLock {
   id: string;
   amount: number;
@@ -27,7 +30,7 @@ export const getPinksaleLiquidityLocks = async (
     isV2: false,
   };
 
-  const locks: ILiquidityLock[] = [];
+  const pinksaleLiquidityLocksData: ILiquidityLock[] = [];
 
   if (network === 'bsc') {
     addresses.v1 = process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS;
@@ -47,10 +50,7 @@ export const getPinksaleLiquidityLocks = async (
     pairPoolDecimals,
     addresses.v1
   );
-
-  if (v1Locks.liquidityLocksData?.length > 0) {
-    locks.push(...v1Locks.liquidityLocksData);
-  }
+  pinksaleLiquidityLocksData.push(...v1Locks.liquidityLocksData);
 
   const v2Locks = await getPinksaleV2Locks(
     web3,
@@ -60,13 +60,10 @@ export const getPinksaleLiquidityLocks = async (
     pairPoolDecimals,
     addresses.v2
   );
-
-  if (v2Locks.liquidityLocksData?.length > 0) {
-    locks.push(...v2Locks.liquidityLocksData);
-  }
+  pinksaleLiquidityLocksData.push(...v2Locks.liquidityLocksData);
 
   return {
-    pinksaleLiquidityLocksData: locks,
+    pinksaleLiquidityLocksData,
     pinksaleTotalLockedLiquidity:
       v1Locks.totalLockedLiquidity + v2Locks.totalLockedLiquidity,
     pinksaleTotalLockedTokens:
@@ -292,28 +289,141 @@ export const getTeamFinanceLiquidityLocks = async (
   tokenDecimals: number,
   pairPoolDecimals: number,
   teamFinanceLockerAddress: string,
-  web3: any
+  web3: any,
+  network: string
 ) => {
-  const teamFinanceLiquidityLocksData = [];
-  let teamFinanceTotalLockedLpTokens = 0;
-  let teamFinanceTotalLockedTokens: number = 0;
+  const teamFinanceLiquidityLocksData: ILiquidityLock[] = [];
+
+  const v1Locks = await getTeamFinanceV1Locks(
+    tokenAddress,
+    pairAddress,
+    tokenDecimals,
+    pairPoolDecimals,
+    network
+  );
+
+  teamFinanceLiquidityLocksData.push(...v1Locks.liquidityLocksData);
+
+  const v2Locks = await getTeamFinanceV2Locks(
+    tokenAddress,
+    pairAddress,
+    tokenDecimals,
+    pairPoolDecimals,
+    teamFinanceLockerAddress,
+    web3,
+    network
+  );
+  teamFinanceLiquidityLocksData.push(...v2Locks.liquidityLocksData);
+
+  return {
+    teamFinanceLiquidityLocksData,
+    teamFinanceTotalLockedTokens:
+      v1Locks.totalLockedTokens + v2Locks.totalLockedTokens,
+    teamFinanceTotalLockedLpTokens:
+      v1Locks.totalLockedLpTokens + v2Locks.totalLockedLpTokens,
+    teamFinanceTotalLockedLiquidity:
+      v1Locks.totalLockedLiquidity + v2Locks.totalLockedLiquidity,
+  };
+};
+
+export const getTeamFinanceV1Locks = async (
+  tokenAddress: string,
+  pairAddress: string,
+  tokenDecimals: number,
+  pairPoolDecimals: number,
+  network: string
+) => {
+  const liquidityLocksData = [];
+  let totalLockedLpTokens = 0;
+  let totalLockedTokens: number = 0;
+
+  const locks = new Map(
+    network === 'eth'
+      ? (teamfinanceV1EthLocks as any)
+      : (teamFinanceV1BscLocks as any)
+  );
+
+  const locksToken: any = locks.get(tokenAddress) || [];
+  const locksLpToken: any = locks.get(pairAddress) || [];
+
+  const currentTimestamp = new Date().valueOf() / 1000;
+
+  for (let i = 0; i < locksToken.length; i++) {
+    if (currentTimestamp < parseInt(locksToken[i].unlockTime)) {
+      totalLockedTokens +=
+        parseInt(locksToken[i].tokenAmount, 10) / 10 ** tokenDecimals;
+    }
+
+    liquidityLocksData.push({
+      id: locksToken[i].id,
+      lockDate: 0,
+      amount: parseInt(locksToken[i].tokenAmount) / 10 ** tokenDecimals,
+      unlockDate: locksToken[i].unlockTime,
+      owner: locksToken[i].withdrawalAddress,
+      expired: parseInt(locksToken[i].unlockTime) < currentTimestamp,
+      isTokenLocked: true,
+    });
+  }
+
+  for (let i = 0; i < locksLpToken.length; i++) {
+    if (currentTimestamp < parseInt(locksLpToken[i].unlockTime)) {
+      totalLockedLpTokens +=
+        parseInt(locksLpToken[i].tokenAmount, 10) / 10 ** pairPoolDecimals;
+    }
+    liquidityLocksData.push({
+      id: locksLpToken[i].id,
+      lockDate: 0,
+      amount: parseInt(locksToken[i].tokenAmount) / 10 ** pairPoolDecimals,
+      unlockDate: locksLpToken[i].unlockTime,
+      owner: locksLpToken[i].withdrawalAddress,
+      expired: parseInt(locksLpToken[i].unlockTime) < currentTimestamp,
+      isTokenLocked: false,
+    });
+  }
+
+  return {
+    liquidityLocksData,
+    totalLockedTokens,
+    totalLockedLpTokens,
+    totalLockedLiquidity: totalLockedTokens + totalLockedLpTokens,
+  };
+};
+
+export const getTeamFinanceV2Locks = async (
+  tokenAddress: string,
+  pairAddress: string,
+  tokenDecimals: number,
+  pairPoolDecimals: number,
+  teamFinanceLockerAddress: string,
+  web3: any,
+  network: string
+) => {
+  const liquidityLocksData = [];
+  let totalLockedLpTokens = 0;
+  let totalLockedTokens: number = 0;
 
   const teamFinanceLocker = new web3.eth.Contract(
     teamFinanceAbi,
     teamFinanceLockerAddress
   );
+
   const currentTimestamp = new Date().valueOf() / 1000;
+
+  const blockNumber = await web3.eth.getBlockNumber();
+
+  const fromBlock = network === 'eth' ? 0 : blockNumber - 49999;
+  const toBlock = network === 'eth' ? 'latest' : blockNumber;
 
   const tokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
     filter: { tokenAddress },
-    fromBlock: 0,
-    toBlock: 'latest',
+    fromBlock,
+    toBlock,
   });
 
   const lpTokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
     filter: { tokenAddress: pairAddress },
-    fromBlock: 0,
-    toBlock: 'latest',
+    fromBlock,
+    toBlock,
   });
 
   for (let i = 0; i < tokenEvents.length; i++) {
@@ -321,11 +431,11 @@ export const getTeamFinanceLiquidityLocks = async (
 
     // Increase total locked tokens
     if (currentTimestamp < parseInt(event.returnValues.unlockTime)) {
-      teamFinanceTotalLockedTokens +=
+      totalLockedTokens +=
         parseInt(event.returnValues.amount, 10) / 10 ** tokenDecimals;
     }
 
-    teamFinanceLiquidityLocksData.push({
+    liquidityLocksData.push({
       id: event.returnValues.id,
       amount: event.returnValues.amount / 10 ** tokenDecimals,
       unlockDate: event.returnValues.unlockTime,
@@ -341,11 +451,11 @@ export const getTeamFinanceLiquidityLocks = async (
 
     // Increase total locked tokens
     if (currentTimestamp < parseInt(event.returnValues.unlockTime)) {
-      teamFinanceTotalLockedLpTokens +=
+      totalLockedLpTokens +=
         parseInt(event.returnValues.amount, 10) / 10 ** pairPoolDecimals;
     }
 
-    teamFinanceLiquidityLocksData.push({
+    liquidityLocksData.push({
       id: event.returnValues.id,
       amount: event.returnValues.amount / 10 ** pairPoolDecimals,
       unlockDate: event.returnValues.unlockTime,
@@ -357,11 +467,10 @@ export const getTeamFinanceLiquidityLocks = async (
   }
 
   return {
-    teamFinanceLiquidityLocksData,
-    teamFinanceTotalLockedTokens,
-    teamFinanceTotalLockedLpTokens,
-    teamFinanceTotalLockedLiquidity:
-      teamFinanceTotalLockedTokens + teamFinanceTotalLockedLpTokens,
+    liquidityLocksData,
+    totalLockedTokens,
+    totalLockedLpTokens,
+    totalLockedLiquidity: totalLockedTokens + totalLockedLpTokens,
   };
 };
 export const getAmountWithoutRounding = (
