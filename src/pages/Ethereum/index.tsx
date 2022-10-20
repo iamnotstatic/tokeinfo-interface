@@ -9,11 +9,13 @@ import {
   getUnicryptLiquidityLocks,
   ILiquidityLock,
   getPinksaleLiquidityLocks,
+  getTeamFinanceLiquidityLocks,
 } from '../../utils';
 import Unicrypt from '../../components/Locks/Unicrypt';
 import Pinksale from '../../components/Locks/Pinksale';
 import { getTokenPairs } from '../../constants/eth';
 import { IContent } from '../../utils/index.interface';
+import TeamFinance from '../../components/Locks/TeamFinance';
 
 const Ethereum = () => {
   const [isActiveIndex, setIsActiveIndex] = useState(0);
@@ -24,6 +26,11 @@ const Ethereum = () => {
   const [pinksaleliquidityLocks, setPinksaleLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
+
+  const [teamFinanceLiquidityLocks, setTeamFinanceLiquidityLocks] = useState<
+    ILiquidityLock[] | []
+  >([]);
+
   const [tokenPairs, setTokenPairs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +53,11 @@ const Ethereum = () => {
     pinksaleTotalLockedLpTokens: 0,
     owner: '',
     network: 'eth',
+    teamFinanceTotalLockedLiquidity: 0,
+    teamFinanceLockedTokenPercentage: 0,
+    teamFinanceLockedLpTokenPercentage: 0,
+    teamFinanceTotalLockedTokens: 0,
+    teamFinanceTotalLockedLpTokens: 0,
   });
 
   useEffect(() => {
@@ -131,6 +143,9 @@ const Ethereum = () => {
 
       const liquidityPoolDecimals = poolDetails.poolDecimals;
 
+      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+      const tokenTotalSupply = totalSupply / 10 ** decimals;
+
       // Uncrypt locks
       const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
         await getUnicryptLiquidityLocks(
@@ -154,13 +169,27 @@ const Ethereum = () => {
         decimals,
         pairPoolDecimals
       );
-      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+
+      // Team finance locks
+      const {
+        teamFinanceLiquidityLocksData,
+        teamFinanceTotalLockedTokens,
+        teamFinanceTotalLockedLpTokens,
+        teamFinanceTotalLockedLiquidity,
+      } = await getTeamFinanceLiquidityLocks(
+        tokenAddress,
+        pairAddress,
+        decimals,
+        pairPoolDecimals,
+        process.env.REACT_APP_ETH_TEAM_FINANCE_LOCKER_V2_ADDRESS as string,
+        web3,
+        content.network
+      );
 
       // Uncrypt Percentage of locked liquidity in the pool
       const unicryptLockedPercentage =
         (uncryptTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
-      const tokenTotalSupply = totalSupply / 10 ** decimals;
       // Pinksale locked liquidity percentage
       const pinksaleLockedTokenPercentage =
         (pinksaleTotalLockedTokens / tokenTotalSupply) * 100;
@@ -168,6 +197,14 @@ const Ethereum = () => {
       // Pinksale locked lp tokens percentage
       const pinksaleLockedLpTokenPercentage =
         (pinksaleTotalLockedLpTokens / initialPairPoolSupply) * 100;
+
+      // Team finance locked liquidity percentage
+      const teamFinanceLockedTokenPercentage =
+        (teamFinanceTotalLockedTokens / tokenTotalSupply) * 100;
+
+      // Team finance locked lp tokens percentage
+      const teamFinanceLockedLpTokenPercentage =
+        (teamFinanceTotalLockedLpTokens / initialPairPoolSupply) * 100;
 
       // Get Locked Percentage
       setContent({
@@ -189,16 +226,23 @@ const Ethereum = () => {
         pinksaleLockedLpTokenPercentage,
         pinksaleTotalLockedTokens,
         pinksaleTotalLockedLpTokens,
+        teamFinanceTotalLockedLiquidity,
+        teamFinanceLockedTokenPercentage,
+        teamFinanceLockedLpTokenPercentage,
+        teamFinanceTotalLockedTokens,
+        teamFinanceTotalLockedLpTokens,
         owner,
         network: 'eth',
       });
 
       setUnicryptLiquidityLocks(uncryptLiquidityLocksData);
       setPinksaleLiquidityLocks(pinksaleLiquidityLocksData);
+      setTeamFinanceLiquidityLocks(teamFinanceLiquidityLocksData);
 
       setError('');
       setLoading(false);
     } catch (error) {
+      console.log(error);
       setContent({ ...content, name: '' });
       setLoading(false);
       setError('Something went wrong, Please check address and try again');
@@ -466,16 +510,25 @@ const Ethereum = () => {
                       <>
                         <Tab>Unicrypt</Tab>
                         <Tab>Pinksale</Tab>
+                        <Tab>Team Finance</Tab>
                       </>
                     ) : pinksaleliquidityLocks.length > 0 ? (
                       <>
                         <Tab>Pinksale</Tab>
                         <Tab>Unicrypt</Tab>
+                        <Tab>Team Finance</Tab>
+                      </>
+                    ) : teamFinanceLiquidityLocks.length > 0 ? (
+                      <>
+                        <Tab>Team Finance</Tab>
+                        <Tab>Pinksale</Tab>
+                        <Tab>Unicrypt</Tab>
                       </>
                     ) : (
                       <>
-                        <Tab>Unicrypt</Tab>
                         <Tab>Pinksale</Tab>
+                        <Tab>Unicrypt</Tab>
+                        <Tab>Team Finance</Tab>
                       </>
                     )}
                   </TabList>
@@ -492,6 +545,13 @@ const Ethereum = () => {
                       <TabPanel>
                         <Pinksale
                           pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
                           onCopy={onCopy}
                           content={content}
                         />
@@ -513,6 +573,38 @@ const Ethereum = () => {
                           content={content}
                         />
                       </TabPanel>
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                    </>
+                  ) : teamFinanceLiquidityLocks.length > 0 ? (
+                    <>
+                      <TabPanel className="mt-5">
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+
+                      <TabPanel>
+                        <Unicrypt
+                          unicryptLiquidityLocks={unicryptLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <Pinksale
+                          pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
                     </>
                   ) : (
                     <>
@@ -526,6 +618,14 @@ const Ethereum = () => {
                       <TabPanel>
                         <Pinksale
                           pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
                           onCopy={onCopy}
                           content={content}
                         />
