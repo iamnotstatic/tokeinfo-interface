@@ -245,7 +245,6 @@ const Ethereum = () => {
       setError('');
       setLoading({ ...loading, locks: false });
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
       setLoading({ ...loading, locks: false });
       setError('Something went wrong, Please check address and try again');
@@ -255,6 +254,11 @@ const Ethereum = () => {
   const onSetAddress = async (e: any, address: string) => {
     if (e !== null) {
       e.preventDefault();
+    }
+
+    if (address === '' || address === '0x...') {
+      setError('Please enter a valid address');
+      return;
     }
 
     setLoading({ ...loading, pairs: true });

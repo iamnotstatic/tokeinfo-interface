@@ -243,7 +243,6 @@ const Binance = () => {
       setError('');
       setLoading({ ...loading, locks: false });
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
       setLoading({ ...loading, locks: false });
       setError('Something went wrong, Please check address and try again');
@@ -255,6 +254,12 @@ const Binance = () => {
       e.preventDefault();
     }
 
+    if (address === '' || address === '0x...') {
+      setError('Please enter a valid address');
+      return;
+    }
+
+    setError('');
     setLoading({ ...loading, pairs: true });
     setContent({ ...content, name: '' });
     setTokenPairs([]);
