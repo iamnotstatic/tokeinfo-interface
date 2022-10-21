@@ -401,6 +401,8 @@ export const getTeamFinanceV2Locks = async (
   const liquidityLocksData = [];
   let totalLockedLpTokens = 0;
   let totalLockedTokens: number = 0;
+  let tokenEvents: any[] = [];
+  let lpTokenEvents: any[] = [];
 
   const teamFinanceLocker = new web3.eth.Contract(
     teamFinanceAbi,
@@ -411,20 +413,50 @@ export const getTeamFinanceV2Locks = async (
 
   const blockNumber = await web3.eth.getBlockNumber();
 
-  const fromBlock = network === 'eth' ? 0 : blockNumber - 49999;
+  const fromBlock = network === 'eth' ? 0 : blockNumber - 300000;
   const toBlock = network === 'eth' ? 'latest' : blockNumber;
 
-  const tokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
-    filter: { tokenAddress },
-    fromBlock,
-    toBlock,
-  });
+  if (network === 'eth') {
+    tokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
+      filter: { tokenAddress },
+      fromBlock,
+      toBlock,
+    });
+  } else {
+    let blockRangeFrom = fromBlock;
 
-  const lpTokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
-    filter: { tokenAddress: pairAddress },
-    fromBlock,
-    toBlock,
-  });
+    for (let i = 0; i < 6; i++) {
+      const events = await teamFinanceLocker.getPastEvents('Deposit', {
+        filter: { tokenAddress },
+        fromBlock: blockRangeFrom,
+        toBlock: blockRangeFrom + 49999,
+      });
+
+      tokenEvents.push(...events);
+      blockRangeFrom += 50000;
+    }
+  }
+
+  if (network === 'eth') {
+    lpTokenEvents = await teamFinanceLocker.getPastEvents('Deposit', {
+      filter: { tokenAddress: pairAddress },
+      fromBlock,
+      toBlock,
+    });
+  } else {
+    let blockRangeFrom = fromBlock;
+
+    for (let i = 0; i < 6; i++) {
+      const events = await teamFinanceLocker.getPastEvents('Deposit', {
+        filter: { tokenAddress: pairAddress },
+        fromBlock: blockRangeFrom,
+        toBlock: blockRangeFrom + 49999,
+      });
+
+      lpTokenEvents.push(...events);
+      blockRangeFrom += 50000;
+    }
+  }
 
   for (let i = 0; i < tokenEvents.length; i++) {
     const event = tokenEvents[i];
