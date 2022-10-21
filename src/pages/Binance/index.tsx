@@ -30,7 +30,10 @@ const Binance = () => {
     ILiquidityLock[] | []
   >([]);
   const [tokenPairs, setTokenPairs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState({
+    pairs: false,
+    locks: false,
+  });
   const [error, setError] = useState('');
   const [content, setContent] = useState<IContent>({
     name: '',
@@ -82,7 +85,7 @@ const Binance = () => {
 
     setError('');
     setContent({ ...content, name: '' });
-    setLoading(true);
+    setLoading({ ...loading, locks: true });
 
     try {
       const web3 = new Web3(process.env.REACT_APP_BSC_MAINNET_URL as string);
@@ -97,7 +100,7 @@ const Binance = () => {
       if (isContract === '0x') {
         setContent({ ...content, name: '' });
         setError('No liquidity found for this pool token');
-        setLoading(false);
+        setLoading({ ...loading, locks: false });
         return;
       }
 
@@ -238,11 +241,11 @@ const Binance = () => {
       setTeamFinanceLiquidityLocks(teamFinanceLiquidityLocksData);
 
       setError('');
-      setLoading(false);
+      setLoading({ ...loading, locks: false });
     } catch (error) {
       console.log(error);
       setContent({ ...content, name: '' });
-      setLoading(false);
+      setLoading({ ...loading, locks: false });
       setError('Something went wrong, Please check address and try again');
     }
   };
@@ -252,8 +255,7 @@ const Binance = () => {
       e.preventDefault();
     }
 
-    setLoading(true);
-    setError('');
+    setLoading({ ...loading, pairs: true });
     setContent({ ...content, name: '' });
     setTokenPairs([]);
 
@@ -275,7 +277,7 @@ const Binance = () => {
       if (!web3.utils.isAddress(address)) {
         setContent({ ...content, name: '' });
         setError('Invalid address provided');
-        setLoading(false);
+        setLoading({ ...loading, pairs: false });
         return;
       }
 
@@ -285,7 +287,7 @@ const Binance = () => {
       if (addressIsContract === '0x') {
         setContent({ ...content, name: '' });
         setError('Address is not a contract, or invalid network');
-        setLoading(false);
+        setLoading({ ...loading, pairs: false });
         return;
       }
 
@@ -295,23 +297,23 @@ const Binance = () => {
       if (pairs.length === 0) {
         setContent({ ...content, name: '' });
         setError('No liquidity found for this token');
-        setLoading(false);
+        setLoading({ ...loading, pairs: false });
         return;
       }
 
       setTokenPairs(pairs);
       setAddress(tokenAddress);
 
-      onGetPoolInfo(
+      await onGetPoolInfo(
         null,
         tokenAddress,
         pairs[0].pairAddress,
         pairs[0].poolSymbol
       );
-      setLoading(false);
+      setLoading({ ...loading, pairs: false });
     } catch (error) {
       setContent({ ...content, name: '' });
-      setLoading(false);
+      setLoading({ ...loading, pairs: false });
       setError('Something went wrong, Please check address and try again');
     }
   };
@@ -397,14 +399,15 @@ const Binance = () => {
           </>
         )}
 
-        {loading && (
+        {loading.pairs || loading.locks ? (
           <div className="text-center mt-16">
             <div className="lds-ripple">
               <div></div>
               <div></div>
             </div>
           </div>
-        )}
+        ) : null}
+
         {content.name && (
           <div className="mt-6 text-center">
             <div className="bg-white text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
