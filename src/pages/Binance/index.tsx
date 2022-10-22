@@ -455,16 +455,21 @@ const Binance = () => {
                 {content.owner && (
                   <div>
                     Owner:{' '}
-                    <CopyToClipboard
-                      text={content.owner}
-                      onCopy={() => onCopy()}
-                    >
-                      <span className="text-gray-500 cursor-pointer">
-                        {content.owner?.slice(0, 6)} ...{' '}
-                        {content.owner?.slice(-5)}{' '}
-                        <i className="fa fa-copy"></i>
-                      </span>
-                    </CopyToClipboard>
+                    {content.owner ===
+                    '0x0000000000000000000000000000000000000000' ? (
+                      <span className="text-green-500">RENOUNCED</span>
+                    ) : (
+                      <CopyToClipboard
+                        text={content.owner}
+                        onCopy={() => onCopy()}
+                      >
+                        <span className="text-gray-500 cursor-pointer">
+                          {content.owner?.slice(0, 6)} ...{' '}
+                          {content.owner?.slice(-5)}{' '}
+                          <i className="fa fa-copy"></i>
+                        </span>
+                      </CopyToClipboard>
+                    )}
                   </div>
                 )}
                 <div className="cursor-pointer">
