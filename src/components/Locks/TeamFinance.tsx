@@ -54,7 +54,7 @@ const TeamFinance = ({
           {getAmountWithoutRounding(content.teamFinanceLockedLpTokenPercentage)}
           % Lp tokens and{' '}
           {getAmountWithoutRounding(content.teamFinanceLockedTokenPercentage)}%
-          tokens are locked in Team Finance <i className="fa fa-lock"></i>
+          tokens are locked in <br /> Team Finance <i className="fa fa-lock"></i>
         </div>
       ) : (
         <div className="font-bold text-center text-sm mt-2">
