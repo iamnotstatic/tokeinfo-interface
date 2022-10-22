@@ -277,6 +277,7 @@ const Binance = () => {
           '',
           `${window.location.pathname}?${urlParams.toString()}`
         );
+        setAddress(address);
       }
 
       if (!web3.utils.isAddress(address)) {

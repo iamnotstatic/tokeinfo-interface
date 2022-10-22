@@ -279,6 +279,7 @@ const Ethereum = () => {
           '',
           `${window.location.pathname}?${urlParams.toString()}`
         );
+        setAddress(address);
       }
 
       if (!web3.utils.isAddress(address)) {
@@ -459,9 +460,7 @@ const Ethereum = () => {
                     Owner:{' '}
                     {content.owner ===
                     '0x0000000000000000000000000000000000000000' ? (
-                      <span className="text-green-500">
-                        RENOUNCED
-                      </span>
+                      <span className="text-green-500">RENOUNCED</span>
                     ) : (
                       <CopyToClipboard
                         text={content.owner}
