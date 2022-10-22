@@ -1,120 +1,120 @@
 import React, { useState, useEffect } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { toast } from 'react-toastify';
 import Web3 from 'web3';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import PairContractAbi from '../../abis/tokeinfo.json';
+import GoldmineAbi from '../../abis/goldmine.json';
 import Erc20Abi from '../../abis/erc20.json';
-import axios, { AxiosResponse } from 'axios';
-import { bscPools } from '../../constants/bsc';
 import {
-  getPinksaleLiquidityLocks,
   getUnicryptLiquidityLocks,
   ILiquidityLock,
+  getPinksaleLiquidityLocks,
+  getTeamFinanceLiquidityLocks,
 } from '../../utils';
-import { toast } from 'react-toastify';
-import CopyToClipboard from 'react-copy-to-clipboard';
-import UniswapPairAbi from '../../abis/uniswapPair.json';
 import Unicrypt from '../../components/Locks/Unicrypt';
 import Pinksale from '../../components/Locks/Pinksale';
+import { getTokenPairs } from '../../constants/bsc';
+import { IContent } from '../../utils/index.interface';
+import TeamFinance from '../../components/Locks/TeamFinance';
 
 const Binance = () => {
-  const [address, setAddress] = useState('0x...');
+  const [isActiveIndex, setIsActiveIndex] = useState(0);
+  const [tokenAddress, setAddress] = useState('0x...');
   const [unicryptLiquidityLocks, setUnicryptLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
   const [pinksaleliquidityLocks, setPinksaleLiquidityLocks] = useState<
     ILiquidityLock[] | []
   >([]);
-  const [loading, setLoading] = useState(false);
+  const [teamFinanceLiquidityLocks, setTeamFinanceLiquidityLocks] = useState<
+    ILiquidityLock[] | []
+  >([]);
+  const [tokenPairs, setTokenPairs] = useState<any[]>([]);
+  const [loading, setLoading] = useState({
+    pairs: false,
+    locks: false,
+  });
   const [error, setError] = useState('');
-  const [content, setContent] = useState({
+  const [content, setContent] = useState<IContent>({
     name: '',
     symbol: '',
-    decimals: '',
+    decimals: 0,
     pairAddress: '',
-    pairName: '',
-    liquidityPoolSupply: 0,
     liquidityPoolSymbol: '',
-    liquidityPoolSupplyUSD: 0,
+    liquidityPoolSupply: 0,
     liquidityTokenPoolSupply: 0,
     pairPoolSupply: 0,
-    totalLockedLiquidity: 0,
-    lockedPercentage: 0,
-    pinksaleTotalLockedLiquidity: 0,
-    pinksaleLockedPercentage: 0,
     tokenTotalSupply: 0,
+    uncryptTotalLockedLiquidity: 0,
+    unicryptLockedPercentage: 0,
+    pinksaleTotalLockedLiquidity: 0,
+    pinksaleLockedTokenPercentage: 0,
+    pinksaleLockedLpTokenPercentage: 0,
+    pinksaleTotalLockedTokens: 0,
+    pinksaleTotalLockedLpTokens: 0,
+    owner: '',
+    network: 'bsc',
+    teamFinanceTotalLockedLiquidity: 0,
+    teamFinanceLockedTokenPercentage: 0,
+    teamFinanceLockedLpTokenPercentage: 0,
+    teamFinanceTotalLockedTokens: 0,
+    teamFinanceTotalLockedLpTokens: 0,
   });
 
-  const [web3, setWeb3] = useState<any | null>(null);
-  const [pairContract, setPairContract] = useState<any | null>(null);
-
   useEffect(() => {
-    const web3 = new Web3(process.env.REACT_APP_INFURA_URL as string);
+    const urlParams = new URLSearchParams(window.location.search);
+    const address = urlParams.get('address');
 
-    const pairContract = new web3.eth.Contract(
-      PairContractAbi as any,
-      process.env.REACT_APP_CONTRACT_ADDRESS as string
-    );
+    if (address) {
+      setAddress(address);
+      onSetAddress(null, address);
+    }
 
-    setPairContract(pairContract);
-    setWeb3(web3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onGetPoolInfo = async (e: any, pairToken: string) => {
+  const onGetPoolInfo = async (
+    e: any,
+    tokenAddress: string,
+    pairAddress: string,
+    poolSymbol: string
+  ) => {
     if (e !== null) {
       e.preventDefault();
     }
+
     setError('');
     setContent({ ...content, name: '' });
-    setLoading(true);
+    setLoading({ ...loading, locks: true });
 
     try {
-      const tokenAddress = await web3.utils.toChecksumAddress(address);
+      const web3 = new Web3(process.env.REACT_APP_BSC_MAINNET_URL as string);
 
-      const bscMainnet = new Web3(process.env.REACT_APP_BSC_RPC as string);
-      const addressIsContract = await bscMainnet.eth.getCode(tokenAddress);
+      const goldmineContract = new web3.eth.Contract(
+        GoldmineAbi as any,
+        process.env.REACT_APP_BSC_CONTRACT_ADDRESS as string
+      );
 
-      if (addressIsContract === '0x') {
-        setContent({ ...content, name: '' });
-        setError('Address is not a contract, or invalid network');
-        setLoading(false);
-        return;
-      }
-
-      const pairAddress = await pairContract.methods
-        .getPair(
-          pairToken,
-          tokenAddress,
-          process.env.REACT_APP_PANCAKE_SWAP_FACTORY_ADDRESS,
-          process.env.REACT_APP_PANCAKE_SWAP_HASH
-        )
-        .call();
-
-      const isContract = await bscMainnet.eth.getCode(pairAddress);
+      const isContract = await web3.eth.getCode(pairAddress);
 
       if (isContract === '0x') {
         setContent({ ...content, name: '' });
         setError('No liquidity found for this pool token');
-        setLoading(false);
+        setLoading({ ...loading, locks: false });
         return;
       }
 
-      const erc20Contract = new bscMainnet.eth.Contract(
+      const erc20Contract = new web3.eth.Contract(
         Erc20Abi as any,
         tokenAddress
       );
 
-      const poolErc20Contract = new bscMainnet.eth.Contract(
-        Erc20Abi as any,
-        pairToken
-      );
-
-      const coingeckoId = bscPools.find(
-        (pool) => pool.address === pairToken
-      )?.coingeckoId;
-
-      const { data }: AxiosResponse = await axios.get(
-        `${process.env.REACT_APP_COINGECKO_URL}simple/price?ids=${coingeckoId}&vs_currencies=usd`
-      );
+      let owner: string = '';
+      try {
+        owner = await erc20Contract.methods.owner().call();
+      } catch (error) {
+        owner = '';
+      }
 
       const name = await erc20Contract.methods.name().call();
       const symbol = await erc20Contract.methods.symbol().call();
@@ -122,106 +122,204 @@ const Binance = () => {
       const totalSupply = await erc20Contract.methods.totalSupply().call();
 
       // Init uniswap pair contract
-      const uniswapPairContract = new bscMainnet.eth.Contract(
-        UniswapPairAbi as any,
-        pairAddress
-      );
+      const poolDetails = await goldmineContract.methods
+        .getPoolInfo(pairAddress)
+        .call();
 
       // Get liquidity pool supply
-      const pairPoolSupply = await uniswapPairContract.methods
-        .totalSupply()
-        .call();
-      const pairPoolDecimals = await uniswapPairContract.methods
-        .decimals()
-        .call();
-
-      const poolReserves = await uniswapPairContract.methods
-        .getReserves()
-        .call();
-      const poolToken0 = await uniswapPairContract.methods.token0().call();
+      const pairPoolSupply = poolDetails.poolTotalSupply;
+      const pairPoolDecimals = poolDetails.poolDecimals;
+      const poolToken0 = poolDetails.token0;
 
       let liquidityTokenPoolSupply;
       let liquidityPoolSupply;
 
       if (web3.utils.toChecksumAddress(poolToken0) === tokenAddress) {
-        liquidityTokenPoolSupply = poolReserves._reserve0;
-        liquidityPoolSupply = poolReserves._reserve1;
+        liquidityTokenPoolSupply = poolDetails._reserve0;
+        liquidityPoolSupply = poolDetails._reserve1;
       } else {
-        liquidityTokenPoolSupply = poolReserves._reserve1;
-        liquidityPoolSupply = poolReserves._reserve0;
+        liquidityTokenPoolSupply = poolDetails._reserve1;
+        liquidityPoolSupply = poolDetails._reserve0;
       }
 
-      const liquidityPoolDecimals = await poolErc20Contract.methods
-        .decimals()
-        .call();
-      const liquidityPoolSymbol = await poolErc20Contract.methods
-        .symbol()
-        .call();
+      const liquidityPoolDecimals = poolDetails.poolDecimals;
+
+      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
+      const tokenTotalSupply = totalSupply / 10 ** decimals;
 
       // Uncrypt locks
       const { uncryptLiquidityLocksData, uncryptTotalLockedLiquidity } =
         await getUnicryptLiquidityLocks(
-          bscMainnet,
+          web3,
           pairAddress,
           process.env.REACT_APP_UNICRYPT_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
           pairPoolDecimals
         );
 
       // Pinsale locks
-      const { pinksaleLiquidityLocksData, pinksaleTotalLockedLiquidity } =
-        await getPinksaleLiquidityLocks(
-          bscMainnet,
-          tokenAddress,
-          process.env.REACT_APP_PINKSALE_BSC_LIQUIDITY_LOCKER_ADDRESS as string,
-          decimals
-        );
+      const {
+        pinksaleLiquidityLocksData,
+        pinksaleTotalLockedLiquidity,
+        pinksaleTotalLockedTokens,
+        pinksaleTotalLockedLpTokens,
+      } = await getPinksaleLiquidityLocks(
+        web3,
+        tokenAddress,
+        pairAddress,
+        content.network,
+        decimals,
+        pairPoolDecimals
+      );
 
-      const initialPairPoolSupply = pairPoolSupply / 10 ** pairPoolDecimals;
-      const intialTotalLockedLiquidity =
-        uncryptTotalLockedLiquidity / 10 ** pairPoolDecimals;
+      // Team finance locks
+      const {
+        teamFinanceLiquidityLocksData,
+        teamFinanceTotalLockedTokens,
+        teamFinanceTotalLockedLpTokens,
+        teamFinanceTotalLockedLiquidity,
+      } = await getTeamFinanceLiquidityLocks(
+        tokenAddress,
+        pairAddress,
+        decimals,
+        pairPoolDecimals,
+        process.env.REACT_APP_BSC_TEAM_FINANCE_LOCKER_V2_ADDRESS as string,
+        web3,
+        content.network
+      );
 
-      // Convert token total supply from Gwei to Ether
-      const convertedTokenTotalSupply = totalSupply / 10 ** decimals;
+      // Uncrypt Percentage of locked liquidity in the pool
+      const unicryptLockedPercentage =
+        (uncryptTotalLockedLiquidity / initialPairPoolSupply) * 100;
 
-      // Unicrypt Percentage of locked liquidity
-      const lockedPercentage =
-        (intialTotalLockedLiquidity / initialPairPoolSupply) * 100;
+      // Pinksale locked liquidity percentage
+      const pinksaleLockedTokenPercentage =
+        (pinksaleTotalLockedTokens / tokenTotalSupply) * 100;
 
-      // PinSale Percentage of locked liquidity
-      const pinksaleLockedPercentage =
-        (pinksaleTotalLockedLiquidity / convertedTokenTotalSupply) * 100;
+      // Pinksale locked lp tokens percentage
+      const pinksaleLockedLpTokenPercentage =
+        (pinksaleTotalLockedLpTokens / initialPairPoolSupply) * 100;
 
+      // Team finance locked liquidity percentage
+      const teamFinanceLockedTokenPercentage =
+        (teamFinanceTotalLockedTokens / tokenTotalSupply) * 100;
+
+      // Team finance locked lp tokens percentage
+      const teamFinanceLockedLpTokenPercentage =
+        (teamFinanceTotalLockedLpTokens / initialPairPoolSupply) * 100;
+
+      // Get Locked Percentage
       setContent({
         name,
         symbol,
         decimals,
         pairAddress,
-        pairName: liquidityPoolSymbol,
+        liquidityPoolSymbol: poolSymbol,
         liquidityPoolSupply:
           parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals,
-        liquidityPoolSymbol,
-        liquidityPoolSupplyUSD:
-          (parseInt(liquidityPoolSupply) / 10 ** liquidityPoolDecimals) *
-          data[`${coingeckoId}`].usd,
         liquidityTokenPoolSupply:
           parseInt(liquidityTokenPoolSupply) / 10 ** decimals,
         pairPoolSupply: initialPairPoolSupply,
-        totalLockedLiquidity: intialTotalLockedLiquidity,
-        lockedPercentage,
-        pinksaleTotalLockedLiquidity: pinksaleTotalLockedLiquidity,
-        pinksaleLockedPercentage,
-        tokenTotalSupply: convertedTokenTotalSupply,
+        tokenTotalSupply,
+        uncryptTotalLockedLiquidity,
+        unicryptLockedPercentage,
+        pinksaleTotalLockedLiquidity,
+        pinksaleLockedTokenPercentage,
+        pinksaleLockedLpTokenPercentage,
+        pinksaleTotalLockedTokens,
+        pinksaleTotalLockedLpTokens,
+        teamFinanceTotalLockedLiquidity,
+        teamFinanceLockedTokenPercentage,
+        teamFinanceLockedLpTokenPercentage,
+        teamFinanceTotalLockedTokens,
+        teamFinanceTotalLockedLpTokens,
+        owner,
+        network: 'bsc',
       });
 
       setUnicryptLiquidityLocks(uncryptLiquidityLocksData);
       setPinksaleLiquidityLocks(pinksaleLiquidityLocksData);
+      setTeamFinanceLiquidityLocks(teamFinanceLiquidityLocksData);
 
       setError('');
-      setLoading(false);
+      setLoading({ ...loading, locks: false });
     } catch (error) {
-      console.log(error);
       setContent({ ...content, name: '' });
-      setLoading(false);
+      setLoading({ ...loading, locks: false });
+      setError('Something went wrong, Please check address and try again');
+    }
+  };
+
+  const onSetAddress = async (e: any, address: string) => {
+    if (e !== null) {
+      e.preventDefault();
+    }
+
+    if (address === '' || address === '0x...') {
+      setError('Please enter a valid address');
+      return;
+    }
+
+    setError('');
+    setLoading({ ...loading, pairs: true });
+    setContent({ ...content, name: '' });
+    setTokenPairs([]);
+
+    try {
+      const web3 = new Web3(process.env.REACT_APP_BSC_MAINNET_URL as string);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramAddress = urlParams.get('address');
+
+      if (paramAddress) {
+        urlParams.set('address', address);
+        window.history.replaceState(
+          {},
+          '',
+          `${window.location.pathname}?${urlParams.toString()}`
+        );
+        setAddress(address);
+      }
+
+      if (!web3.utils.isAddress(address)) {
+        setContent({ ...content, name: '' });
+        setError('Invalid address provided');
+        setLoading({ ...loading, pairs: false });
+        return;
+      }
+
+      const tokenAddress = web3.utils.toChecksumAddress(address);
+      const addressIsContract = await web3.eth.getCode(tokenAddress);
+
+      if (addressIsContract === '0x') {
+        setContent({ ...content, name: '' });
+        setError('Address is not a contract, or invalid network');
+        setLoading({ ...loading, pairs: false });
+        return;
+      }
+
+      // get token pairs
+      const pairs = await getTokenPairs(tokenAddress, web3);
+
+      if (pairs.length === 0) {
+        setContent({ ...content, name: '' });
+        setError('No liquidity found for this token');
+        setLoading({ ...loading, pairs: false });
+        return;
+      }
+
+      setTokenPairs(pairs);
+      setAddress(tokenAddress);
+
+      await onGetPoolInfo(
+        null,
+        tokenAddress,
+        pairs[0].pairAddress,
+        pairs[0].poolSymbol
+      );
+      setLoading({ ...loading, pairs: false });
+    } catch (error) {
+      setContent({ ...content, name: '' });
+      setLoading({ ...loading, pairs: false });
       setError('Something went wrong, Please check address and try again');
     }
   };
@@ -239,10 +337,10 @@ const Binance = () => {
     });
   };
   return (
-    <div className="bg-white mx-auto max-w-lg shadow-xl rounded-2xl p-4 dark:bg-gray-800 mt-5">
+    <div className="bg-white mx-auto max-w-lg shadow-2xl rounded-2xl p-4 dark:bg-gray-800 mt-10">
       <form
         className="w-full p-5"
-        onSubmit={(e) => onGetPoolInfo(e, bscPools[0].address)}
+        onSubmit={(e) => onSetAddress(e, tokenAddress)}
       >
         {error && (
           <div
@@ -259,58 +357,85 @@ const Binance = () => {
         </label>
         <div className="">
           <input
-            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:text-white dark:border-gray-600"
+            className="shadow appearance-none border rounded w-full py-5 px-4 text-gray-700 text-lg leading-tight focus:outline-none focus:shadow-outline  dark:bg-gray-800 dark:text-white dark:border-gray-600"
             id="address"
             type="text"
+            required={true}
             placeholder="0x..."
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={(e) => onSetAddress(null, e.target.value)}
             autoComplete="off"
           />
         </div>
 
-        <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
-          Select Pool Token
-        </label>
-        <div className="flex flex-wrap text-center">
-          {bscPools.slice(0, -1).map((pool) => (
+        {tokenPairs.length > 0 && (
+          <>
+            <label className="block text-gray-700 text-sm font-bold mb-2 text-left dark:text-gray-50 mt-5">
+              Select Pair
+            </label>
             <div
-              key={pool.address}
-              className="flex-auto text-center"
-              onClick={() => onGetPoolInfo(null, pool.address)}
+              className={`flex text-center max-w-full gap-2 overflow-scroll ${
+                tokenPairs?.length < 5 && 'justify-center'
+              }`}
             >
-              <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
-                <img src={pool.logo} alt={pool.symbol} className="w-8" />
-              </div>
+              {tokenPairs.map((pair, index) => (
+                <div
+                  key={index}
+                  className="text-center"
+                  onClick={() => {
+                    setIsActiveIndex(index);
+                    onGetPoolInfo(
+                      null,
+                      pair.tokenAddress,
+                      pair.pairAddress,
+                      pair.poolSymbol
+                    );
+                  }}
+                >
+                  <div
+                    className={`w-20 ${
+                      isActiveIndex === index ? 'bg-gray-100' : 'bg-gray-500'
+                    } p-2 rounded-lg cursor-pointer hover:bg-gray-300 text-center`}
+                  >
+                    <img src={pair.logo} alt="pool" className="w-8 mx-auto" />
+                    <p className="text-xs mt-2 font-bold">{pair.poolSymbol}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          <div
-            className="flex text-center"
-            onClick={() => onGetPoolInfo(null, bscPools.slice(-1)[0].address)}
-          >
-            <div className="w-14 bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200">
-              <img
-                src={bscPools.slice(-1)[0].logo}
-                alt={bscPools.slice(-1)[0].symbol}
-                className="w-8"
-              />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        {loading && (
+        {loading.pairs || loading.locks ? (
           <div className="text-center mt-16">
             <div className="lds-ripple">
               <div></div>
               <div></div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {content.name && (
           <div className="mt-6 text-center">
-            <div className="bg-white dark:bg-gray-800 dark:text-white text-gray-700 px-4 py-3 rounded relative">
-              <strong className="font-bold text-left">Token Info</strong>
+            <div className="bg-white text-gray-700 dark:bg-gray-800 dark:text-white px-4 py-3 rounded relative">
               <div className="text-left mb-3">
+                <div className="cursor-pointer">
+                  Token:{' '}
+                  <CopyToClipboard text={tokenAddress} onCopy={() => onCopy()}>
+                    <span>
+                      <a
+                        href={`${process.env.REACT_APP_BSCSCAN_URL}address/${tokenAddress}`}
+                        className="text-blue-500"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {tokenAddress?.slice(0, 6)} ...{' '}
+                        {tokenAddress?.slice(-5)}{' '}
+                      </a>
+
+                      <i className="fa fa-copy"></i>
+                    </span>
+                  </CopyToClipboard>
+                </div>
                 <div>
                   Name: <span className="text-gray-500">{content.name}</span>
                 </div>
@@ -322,6 +447,32 @@ const Binance = () => {
                   Decimals:{' '}
                   <span className="text-gray-500">{content.decimals}</span>
                 </div>
+                <div>
+                  Total Supply:{' '}
+                  <span className="text-gray-500">
+                    {content.tokenTotalSupply.toLocaleString('en-US')}
+                  </span>
+                </div>
+                {content.owner && (
+                  <div>
+                    Owner:{' '}
+                    {content.owner ===
+                    '0x0000000000000000000000000000000000000000' ? (
+                      <span className="text-green-500">RENOUNCED</span>
+                    ) : (
+                      <CopyToClipboard
+                        text={content.owner}
+                        onCopy={() => onCopy()}
+                      >
+                        <span className="text-gray-500 cursor-pointer">
+                          {content.owner?.slice(0, 6)} ...{' '}
+                          {content.owner?.slice(-5)}{' '}
+                          <i className="fa fa-copy"></i>
+                        </span>
+                      </CopyToClipboard>
+                    )}
+                  </div>
+                )}
                 <div className="cursor-pointer">
                   Pancakeswap V2 pair:{' '}
                   <CopyToClipboard
@@ -340,14 +491,6 @@ const Binance = () => {
                   <span className="text-gray-500">
                     {content.liquidityPoolSupply.toLocaleString('en-US')}{' '}
                   </span>
-                  <span className="font-bold">
-                    (
-                    {content.liquidityPoolSupplyUSD.toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                    })}
-                    )
-                  </span>
                 </div>
                 <div>
                   Pooled {content.name}:{' '}
@@ -358,30 +501,46 @@ const Binance = () => {
                 <div>
                   Pool:{' '}
                   <a
-                    href={`${process.env.REACT_APP_BSC_SCAN_URL}address/${content.pairAddress}`}
+                    href={`${process.env.REACT_APP_BSCSCAN_URL}address/${content.pairAddress}`}
                     className="text-blue-500"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {content.symbol}/{content.pairName}
+                    {content.symbol}/{content.liquidityPoolSymbol}
                   </a>
                 </div>
+                <div>
+                  Total LP tokens:{' '}
+                  <span className="text-gray-500">
+                    {content.pairPoolSupply.toLocaleString('en-US')}
+                  </span>
+                </div>
+
                 <Tabs className="mt-3 mb-3">
                   <TabList className="text-center dark:bg-gray-800 dark:text-gray-100">
                     {unicryptLiquidityLocks.length > 0 ? (
                       <>
                         <Tab>Unicrypt</Tab>
                         <Tab>Pinksale</Tab>
+                        <Tab>Team Finance</Tab>
                       </>
                     ) : pinksaleliquidityLocks.length > 0 ? (
                       <>
                         <Tab>Pinksale</Tab>
                         <Tab>Unicrypt</Tab>
+                        <Tab>Team Finance</Tab>
+                      </>
+                    ) : teamFinanceLiquidityLocks.length > 0 ? (
+                      <>
+                        <Tab>Team Finance</Tab>
+                        <Tab>Pinksale</Tab>
+                        <Tab>Unicrypt</Tab>
                       </>
                     ) : (
                       <>
-                        <Tab>Unicrypt</Tab>
                         <Tab>Pinksale</Tab>
+                        <Tab>Unicrypt</Tab>
+                        <Tab>Team Finance</Tab>
                       </>
                     )}
                   </TabList>
@@ -398,6 +557,13 @@ const Binance = () => {
                       <TabPanel>
                         <Pinksale
                           pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
                           onCopy={onCopy}
                           content={content}
                         />
@@ -419,6 +585,38 @@ const Binance = () => {
                           content={content}
                         />
                       </TabPanel>
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                    </>
+                  ) : teamFinanceLiquidityLocks.length > 0 ? (
+                    <>
+                      <TabPanel className="mt-5">
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+
+                      <TabPanel>
+                        <Unicrypt
+                          unicryptLiquidityLocks={unicryptLiquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+                      <TabPanel>
+                        <Pinksale
+                          pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
                     </>
                   ) : (
                     <>
@@ -432,6 +630,14 @@ const Binance = () => {
                       <TabPanel>
                         <Pinksale
                           pinksaleliquidityLocks={pinksaleliquidityLocks}
+                          onCopy={onCopy}
+                          content={content}
+                        />
+                      </TabPanel>
+
+                      <TabPanel>
+                        <TeamFinance
+                          teamFinanceLiquidityLocks={teamFinanceLiquidityLocks}
                           onCopy={onCopy}
                           content={content}
                         />

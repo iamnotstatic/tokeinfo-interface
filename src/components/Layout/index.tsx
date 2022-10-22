@@ -9,7 +9,7 @@ import Foooter from '../Footer';
 import Ethereum from '../../pages/Ethereum';
 import Binance from '../../pages/Binance';
 
-const Layout = () => {
+const Layout = ({ active }: { active: string }) => {
   const [colorTheme, setTheme] = useDarkMode();
   return (
     <div className="flex flex-col h-screen font-mono">
@@ -50,17 +50,59 @@ const Layout = () => {
       </div>
       <main className="flex-grow bg-gray-100 dark:bg-gray-800">
         <Tabs className="text-sm">
-          <TabList className="shadow-lg p-4 dark:bg-gray-800 dark:text-gray-100 text-center bg-white">
-            <Tab>Ethereum</Tab>
-            <Tab>Binance Smart Chain</Tab>
+          <TabList
+            className="shadow-lg p-4 dark:bg-gray-800 dark:text-gray-100 text-center bg-white"
+            onClick={() => {
+              window.history.pushState({}, document.title, '/');
+            }}
+          >
+            {active === 'eth' ? (
+              <>
+                <Tab>Ethereum</Tab>
+                <Tab>Binance Smart Chain</Tab>
+              </>
+            ) : active === 'bsc' ? (
+              <>
+                <Tab>Binance Smart Chain</Tab>
+                <Tab>Ethereum</Tab>
+              </>
+            ) : (
+              <>
+                <Tab>Ethereum</Tab>
+                <Tab>Binance Smart Chain</Tab>
+              </>
+            )}
           </TabList>
 
-          <TabPanel className="mt-5">
-            <Ethereum />
-          </TabPanel>
-          <TabPanel>
-            <Binance />
-          </TabPanel>
+          {active === 'eth' ? (
+            <>
+              <TabPanel className="mt-5">
+                <Ethereum />
+              </TabPanel>
+
+              <TabPanel>
+                <Binance />
+              </TabPanel>
+            </>
+          ) : active === 'bsc' ? (
+            <>
+              <TabPanel>
+                <Binance />
+              </TabPanel>
+              <TabPanel className="mt-5">
+                <Ethereum />
+              </TabPanel>
+            </>
+          ) : (
+            <>
+              <TabPanel className="mt-5">
+                <Ethereum />
+              </TabPanel>
+              <TabPanel>
+                <Binance />
+              </TabPanel>
+            </>
+          )}
         </Tabs>
       </main>
       <ToastContainer />

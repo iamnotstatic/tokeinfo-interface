@@ -25,6 +25,14 @@ const Foooter = () => {
         >
           <span className="text-blue-400">iamnotstatic</span>
         </a>
+        , see{' '}
+        <a
+          href="https://github.com/iamnotstatic/tokeinfo-interface"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="text-blue-400">GitHub.</span>
+        </a>
       </div>
     </footer>
   );

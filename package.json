@@ -1,5 +1,5 @@
 {
-  "name": "pair-getter-interface",
+  "name": "tokeinfo-interface",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:iamnotstatic/pair-getter-interface.git"
+    "url": "git@github.com:iamnotstatic/tokeinfo-interface.git"
   },
   "dependencies": {
     "@craco/craco": "^6.4.2",
@@ -36,6 +36,7 @@
     "react-copy-to-clipboard": "^5.0.4",
     "react-dom": "^17.0.2",
     "react-moment": "^1.1.1",
+    "react-router-dom": "^6.4.2",
     "react-scripts": "4.0.3",
     "react-tabs": "^3.2.3",
     "react-toastify": "^8.1.0",

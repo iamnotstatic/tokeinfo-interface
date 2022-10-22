@@ -5,7 +5,7 @@
 
 [![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-red.svg?style=flat)](http://makeapullrequest.com)
 
-Get token liquidity pool info with ease
+Get token liquidity pool info with ease on Ethereum and Binance smart chain.
 
 </div>
 
@@ -17,20 +17,22 @@ $ git clone `https://github.com/iamnotstatic/tokeinfo-interface`
 
 ```
 
+
+Copy ```.env.example``` to  ```.env``` and add your RPC url
 ### Starting the Frontend
 
 ```bash
+# .env
+REACT_APP_BSC_MAINNET_URL=
+REACT_APP_ETH_MAINNET_URL=
+
 # Install Dependencies
 $ yarn install
 
-## Add the necessary Keys the .env.* file
 
 # Lunch the project
 $ yarn start
 ```
 
-# Author 💖
-
-[Abdulfatai Suleiman](https://twitter.com/iamnotstatic)!
-
-
+## Want to contribute?
+Contributions are welcome! 
