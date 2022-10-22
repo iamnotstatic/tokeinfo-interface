@@ -1,5 +1,5 @@
 {
-  "name": "pair-getter-interface",
+  "name": "tokeinfo-interface",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:iamnotstatic/pair-getter-interface.git"
+    "url": "git@github.com:iamnotstatic/tokeinfo-interface.git"
   },
   "dependencies": {
     "@craco/craco": "^6.4.2",
