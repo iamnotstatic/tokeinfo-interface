@@ -34,6 +34,11 @@ export const getTokenPairs = async (tokenAddress: string, web3: any) => {
       symbol: 'DAI',
       logo: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.svg?v=014',
     },
+    {
+      address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+      symbol: 'Cake',
+      logo: 'https://cryptologos.cc/logos/pancakeswap-cake-logo.svg?v=14',
+    }
   ];
 
   for (const pool of pools) {
